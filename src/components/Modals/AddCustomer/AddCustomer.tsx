@@ -11,15 +11,19 @@ import {
   Select,
   SelectItem,
 } from "@nextui-org/react";
+import { useCreateCustomer } from "hooks/useCustomer";
 import React from "react";
-import { toast } from "sonner";
+import { toDate } from "../../../utils/common";
 
 export default function AddCustomer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+
+  const createCustomer = useCreateCustomer();
+
   const [formData, setFormData] = React.useState({
-    firstName: "",
-    lastName: "",
+    firstname: "",
+    lastname: "",
     address: "",
-    dateOfBirth: null as CalendarDate | null,
+    dateofbirth: null as CalendarDate | null,
     contact: "",
     email: "",
     gender: "",
@@ -33,10 +37,33 @@ export default function AddCustomer({ isOpen, onClose }: { isOpen: boolean; onCl
     }));
   };
 
-  const handleSubmit = () => {
-    console.log("Form Data:", formData);
-    toast.success("Customer added successfully!");
-    onClose();
+
+  const handleSubmit = async () => {
+    try {
+      if (!formData.dateofbirth) {
+        throw new Error("Date of birth is required");
+      }
+
+      await createCustomer.mutateAsync({
+        ...formData,
+        dateofbirth: toDate(formData.dateofbirth),
+      });
+
+      onClose();
+
+      setFormData({
+        firstname: "",
+        lastname: "",
+        address: "",
+        dateofbirth: null as CalendarDate | null,
+        contact: "",
+        email: "",
+        gender: "",
+        company: "",
+      });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -58,16 +85,16 @@ export default function AddCustomer({ isOpen, onClose }: { isOpen: boolean; onCl
                     label="First Name"
                     placeholder="Enter first name"
                     variant="bordered"
-                    value={formData.firstName}
-                    onChange={(e) => handleChange("firstName", e.target.value)}
+                    value={formData.firstname}
+                    onChange={(e) => handleChange("firstname", e.target.value)}
                   />
                   <Input
                     isRequired
                     label="Last Name"
                     placeholder="Enter last name"
                     variant="bordered"
-                    value={formData.lastName}
-                    onChange={(e) => handleChange("lastName", e.target.value)}
+                    value={formData.lastname}
+                    onChange={(e) => handleChange("lastname", e.target.value)}
                   />
                 </div>
 
@@ -106,11 +133,11 @@ export default function AddCustomer({ isOpen, onClose }: { isOpen: boolean; onCl
                     isRequired
                     label="Date of Birth"
                     className="w-full rounded-lg"
-                    value={formData.dateOfBirth}
+                    value={formData.dateofbirth}
                     color="default"
                     minValue={today(getLocalTimeZone()).subtract({ years: 120 })}
                     maxValue={today(getLocalTimeZone())}
-                    onChange={(date) => handleChange("dateOfBirth", date)}
+                    onChange={(date) => handleChange("dateofbirth", date)}
                   />
 
                   <Select
@@ -121,9 +148,9 @@ export default function AddCustomer({ isOpen, onClose }: { isOpen: boolean; onCl
                     value={formData.gender}
                     onChange={(e) => handleChange("gender", e.target.value)}
                   >
-                    <SelectItem key="male" value="Male">Male</SelectItem>
-                    <SelectItem key="female" value="Female">Female</SelectItem>
-                    <SelectItem key="other" value="Other">Other</SelectItem>
+                    <SelectItem key="Male" value="Male">Male</SelectItem>
+                    <SelectItem key="Female" value="Female">Female</SelectItem>
+                    <SelectItem key="Other" value="Other">Other</SelectItem>
                   </Select>
                 </div>
 

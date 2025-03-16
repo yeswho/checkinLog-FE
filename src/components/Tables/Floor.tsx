@@ -1,38 +1,41 @@
 import {
-    Button,
-    Dropdown,
-    DropdownItem,
-    DropdownMenu,
-    DropdownTrigger,
-    Input,
-    Pagination,
-    Selection,
-    SortDescriptor,
-    Table,
-    TableBody,
-    TableCell,
-    TableColumn,
-    TableHeader,
-    TableRow,
-    useDisclosure
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Pagination,
+  Selection,
+  SortDescriptor,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  useDisclosure
 } from "@nextui-org/react";
 import React from "react";
+import { useFloors } from '../../hooks/useFloor';
 import { ChevronDownIcon } from "./ChevronDownIcon";
+import { columns } from './floorData';
 import { PlusIcon } from "./PlusIcon";
 import { SearchIcon } from "./SearchIcon";
 import { capitalize } from "./utils";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
-import { columns, floors as initialFloors } from './floorData';
+import AddFloor from "../Modals/AddFloor/AddFloor";
+import { Spinner } from "@heroui/react";
 
-const INITIAL_VISIBLE_COLUMNS = ["id", "name", "createdAt","updatedAt","actions"];
+const INITIAL_VISIBLE_COLUMNS = ["id", "name", "createdAt", "updatedAt", "actions"];
 
 export default function FloorTable() {
+  const { data: floors, isLoading, isError } = useFloors();
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [page, setPage] = React.useState(1);
-  const [floors, setFloors] = React.useState(initialFloors);
   const [selectedFloor, setSelectedFloor] = React.useState(null);
 
   const { isOpen: isAddOpen, onOpen: onAddOpen, onClose: onAddClose } = useDisclosure();
@@ -52,7 +55,7 @@ export default function FloorTable() {
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
-    let filteredFloors = [...floors];
+    let filteredFloors = floors || []; // Use fetched floors data
 
     if (hasSearchFilter) {
       filteredFloors = filteredFloors.filter((floor) =>
@@ -63,7 +66,7 @@ export default function FloorTable() {
     return filteredFloors.sort((a, b) => {
       const first = a[sortDescriptor.column as keyof typeof a];
       const second = b[sortDescriptor.column as keyof typeof b];
-      
+
       const cmp = first < second ? -1 : first > second ? 1 : 0;
 
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
@@ -99,14 +102,14 @@ export default function FloorTable() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem 
+                <DropdownItem
                   onPress={() => {
                     setSelectedFloor(floor);
                     onUpdateOpen();
                   }}>
                   Edit Floor
                 </DropdownItem>
-                <DropdownItem 
+                <DropdownItem
                   onPress={() => {
                     setSelectedFloor(floor);
                     onDeleteOpen();
@@ -193,7 +196,7 @@ export default function FloorTable() {
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {floors.length} floors</span>
+          <span className="text-default-400 text-small">Total {floors?.length || 0} floors</span>
           <label className="flex items-center text-default-400 text-small">
             Rows per page:
             <select
@@ -208,7 +211,7 @@ export default function FloorTable() {
         </div>
       </div>
     );
-  }, [filterValue, visibleColumns, onSearchChange, onRowsPerPageChange, floors.length]);
+  }, [filterValue, visibleColumns, onSearchChange, onRowsPerPageChange, floors?.length]);
 
   const bottomContent = React.useMemo(() => {
     return (
@@ -233,6 +236,18 @@ export default function FloorTable() {
       </div>
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+
+  // Handle loading and error states
+  if (isLoading) return <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+    <Spinner
+      classNames={{
+        base: "scale-150",
+        label: "text-foreground mt-4",
+      }}
+      color="primary"
+    />
+  </div>;;
+  if (isError) return <div>Error fetching floors. Please try again later.</div>;
 
   return (
     <div>
@@ -273,6 +288,7 @@ export default function FloorTable() {
           )}
         </TableBody>
       </Table>
+      <AddFloor isOpen={isAddOpen} onClose={onAddClose} />
     </div>
   );
 }

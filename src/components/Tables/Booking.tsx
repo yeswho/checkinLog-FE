@@ -1,52 +1,80 @@
 import {
-    Button,
-    Dropdown,
-    DropdownItem,
-    DropdownMenu,
-    DropdownTrigger,
-    Input,
-    Pagination,
-    Selection,
-    SortDescriptor,
-    Table,
-    TableBody,
-    TableCell,
-    TableColumn,
-    TableHeader,
-    TableRow,
-    useDisclosure,
-    User
+  Button,
+  Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Pagination,
+  Selection,
+  SortDescriptor,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  useDisclosure,
+  User,
 } from "@nextui-org/react";
 import React from "react";
+import { useBookings } from "../../hooks/useBooking";
+import { formatDate } from "../../utils/common";
 import AddBooking from "../Modals/AddBooking/AddBooking";
-import UpdateBooking from "../Modals/UpdateBooking/UpdateBooking";
 import DeleteBooking from "../Modals/DeleteBooking/DeleteBooking";
+import UpdateBooking from "../Modals/UpdateBooking/UpdateBooking";
+import GenerateBill from "../Modals/GenerateBill/GenerateBill"
+import { columns } from "./bookingData";
 import { ChevronDownIcon } from "./ChevronDownIcon";
 import { PlusIcon } from "./PlusIcon";
 import { SearchIcon } from "./SearchIcon";
 import { capitalize } from "./utils";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
-import { columns, bookings as initialBookings } from './bookingData';
+import { Spinner } from "@heroui/react";
 
-const INITIAL_VISIBLE_COLUMNS = ["customer", "room", "checkIn", "checkOut", "duration", "totalPrice", "status", "actions"];
+const INITIAL_VISIBLE_COLUMNS = [
+  "customer",
+  "room",
+  "checkIn",
+  "checkOut",
+  "duration",
+  "totalPrice",
+  "status",
+  "actions",
+];
+
+enum BOOKING_STATUS {
+  CANCELLED = 'Cancelled',
+  COMPLETED = 'Completed',
+  NO_SHOW = 'No show',
+  CHECKED_OUT = 'Checked out',
+  CHECKED_IN = 'Checked in',
+  BOOKED = 'Booked'
+}
 
 export default function BookingsTable() {
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
-  const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
+  const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
+    new Set(INITIAL_VISIBLE_COLUMNS)
+  );
   const [rowsPerPage, setRowsPerPage] = React.useState(20);
   const [page, setPage] = React.useState(1);
-  const [bookings, setBookings] = React.useState(initialBookings);
   const [selectedBooking, setSelectedBooking] = React.useState(null);
 
   const { isOpen: isBookingOpen, onOpen: onBookingOpen, onClose: onBookingClose } = useDisclosure();
   const { isOpen: isBookingUpdateOpen, onOpen: onBookingUpdateOpen, onClose: onBookingUpdateClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const { isOpen: isGenerateBillOpen, onOpen: onGenerateBillOpen, onClose: onGenerateBillClose } = useDisclosure();
 
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
     column: "bookingId",
     direction: "ascending",
   });
+
+  // Use the useBookings hook to fetch bookings data
+  const { data: bookings = [], isLoading, isError } = useBookings();
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -59,9 +87,9 @@ export default function BookingsTable() {
     let filteredBookings = [...bookings];
 
     if (hasSearchFilter) {
-      filteredBookings = filteredBookings.filter((booking) =>
-        booking.customer.name.toLowerCase().includes(filterValue.toLowerCase()) ||
-        booking.room.name.toLowerCase().includes(filterValue.toLowerCase())
+      filteredBookings = filteredBookings.filter(
+        (booking) =>
+          booking.customer.firstname.toLowerCase().includes(filterValue.toLowerCase())
       );
     }
 
@@ -69,19 +97,23 @@ export default function BookingsTable() {
     return filteredBookings.sort((a, b) => {
       let first = a[sortDescriptor.column as keyof typeof a];
       let second = b[sortDescriptor.column as keyof typeof b];
-      
+
       // Handle nested objects (customer, room)
       if (sortDescriptor.column === "customer") {
-        first = a.customer.name;
-        second = b.customer.name;
+        first = a.customer;
+        second = b.customer;
       } else if (sortDescriptor.column === "room") {
-        first = a.room.name;
-        second = b.room.name;
+        first = a.room;
+        second = b.room;
       }
-      
+
       // Handle dates
-      if (sortDescriptor.column === "checkIn" || sortDescriptor.column === "checkOut" || 
-          sortDescriptor.column === "createdAt" || sortDescriptor.column === "updatedAt") {
+      if (
+        sortDescriptor.column === "checkIn" ||
+        sortDescriptor.column === "checkOut" ||
+        sortDescriptor.column === "createdAt" ||
+        sortDescriptor.column === "updatedAt"
+      ) {
         first = new Date(first as string).getTime();
         second = new Date(second as string).getTime();
       }
@@ -92,8 +124,6 @@ export default function BookingsTable() {
     });
   }, [bookings, filterValue, sortDescriptor]);
 
-
-  
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
   const items = React.useMemo(() => {
@@ -112,34 +142,48 @@ export default function BookingsTable() {
               description: "text-default-500",
             }}
             description={booking.customer.email}
-            name={booking.customer.name}
+            name={`${booking.customer.firstname} ${booking.customer.lastname}`}
           >
-            {booking.customer.contactNumber}
+            {booking.customer.contact}
           </User>
         );
       case "room":
         return (
           <div>
-            <p className="text-bold">{booking.room.name}</p>
-            <p className="text-tiny text-default-500">{`${booking.room.floor} - ${booking.room.roomType}`}</p>
+            <p className="text-bold">
+              {booking.rooms.map((room: any) => room.name).join(" + ")}
+            </p>
+            <p className="text-tiny text-default-500">
+              {booking.rooms.map((room: any) => `${room.floor.name} - ${room.roomType.name}`).join(" + ")}
+            </p>
           </div>
         );
       case "checkIn":
-        return new Date(booking.checkIn).toLocaleDateString();
+        return formatDate(booking.check_in);
       case "checkOut":
-        return new Date(booking.checkOut).toLocaleDateString();
+        return formatDate(booking.check_out);
       case "duration":
         return `${booking.duration} nights`;
       case "totalPrice":
-        return `रु.${booking.totalPrice.toFixed(2)}`;
+        return `रु.${booking?.totalPrice}`;
       case "status":
         return (
-          <div className={`text-${booking.status === 'cancelled' ? 'danger' : 
-                            booking.status === 'confirmed' ? 'primary' :
-                            booking.status === 'checked-in' ? 'success' : 
-                            'warning'} text-transform: uppercase`}>
+          <Chip
+            color={
+              booking.status === BOOKING_STATUS.BOOKED
+                ? "primary"
+                : booking.status === BOOKING_STATUS.CHECKED_OUT
+                  ? "warning"
+                  : booking.status === BOOKING_STATUS.CHECKED_IN
+                    ? "success"
+                    : booking.status === BOOKING_STATUS.COMPLETED
+                      ? "warning"
+                      : "danger"
+            }
+            variant="flat"
+          >
             {booking.status}
-          </div>
+          </Chip>
         );
       case "createdAt":
         return new Date(booking.createdAt).toLocaleDateString();
@@ -155,18 +199,28 @@ export default function BookingsTable() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem 
+                <DropdownItem
                   onPress={() => {
                     setSelectedBooking(booking);
                     onBookingUpdateOpen();
-                  }}>
+                  }}
+                >
                   Edit Booking
                 </DropdownItem>
-                <DropdownItem 
+                <DropdownItem
+                  onPress={() => {
+                    setSelectedBooking(booking);
+                    onGenerateBillOpen();
+                  }}
+                >
+                  Generate Bill
+                </DropdownItem>
+                <DropdownItem
                   onPress={() => {
                     setSelectedBooking(booking);
                     onDeleteOpen();
-                  }}>
+                  }}
+                >
                   Delete Booking
                 </DropdownItem>
               </DropdownMenu>
@@ -213,11 +267,7 @@ export default function BookingsTable() {
           <div className="flex gap-3">
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
-                <Button
-                  endContent={<ChevronDownIcon className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
+                <Button endContent={<ChevronDownIcon className="text-small" />} size="sm" variant="flat">
                   Columns
                 </Button>
               </DropdownTrigger>
@@ -288,6 +338,17 @@ export default function BookingsTable() {
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
+  if (isLoading) return <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+    <Spinner
+      classNames={{
+        base: "scale-150",
+        label: "text-foreground mt-4",
+      }}
+      color="primary"
+    />
+  </div>;
+  if (isError) return <div>Error fetching bookings</div>;
+
   return (
     <div>
       <Table
@@ -321,25 +382,21 @@ export default function BookingsTable() {
         </TableHeader>
         <TableBody emptyContent={"No bookings found"} items={items}>
           {(item) => (
-            <TableRow key={item.bookingId}>
+            <TableRow key={item.id}>
               {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
             </TableRow>
           )}
         </TableBody>
       </Table>
 
-      <AddBooking 
-              isOpen={isBookingOpen}
-              onClose={onBookingClose} room={undefined}      />
+      <AddBooking isOpen={isBookingOpen} onClose={onBookingClose} room={undefined} />
 
-      <UpdateBooking
-        isOpen={isBookingUpdateOpen}
-        onClose={onBookingUpdateClose} booking={selectedBooking}     />
+      <UpdateBooking isOpen={isBookingUpdateOpen} onClose={onBookingUpdateClose} booking={selectedBooking} />
 
-      <DeleteBooking
-        isOpen={isDeleteOpen}
-        onClose={onDeleteClose} booking={selectedBooking}     />
+      <DeleteBooking isOpen={isDeleteOpen} onClose={onDeleteClose} booking={selectedBooking} />
 
+      <GenerateBill isOpen={isGenerateBillOpen} onClose={onGenerateBillClose} booking={selectedBooking} />
     </div>
+
   );
 }

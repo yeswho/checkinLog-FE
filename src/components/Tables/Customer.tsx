@@ -1,35 +1,39 @@
-import React from "react";
 import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Input,
   Button,
-  DropdownTrigger,
-  Dropdown,
-  DropdownMenu,
-  DropdownItem,
   Chip,
-  User,
+  ChipProps,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
   Pagination,
   Selection,
-  ChipProps,
   SortDescriptor,
-  useDisclosure
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  useDisclosure,
+  User,
 } from "@nextui-org/react";
-import { PlusIcon } from "./PlusIcon";
-import { VerticalDotsIcon } from "./VerticalDotsIcon";
-import { ChevronDownIcon } from "./ChevronDownIcon";
-import { SearchIcon } from "./SearchIcon";
-import { columns, customers, genderOptions } from "./customerData";
-import { capitalize } from "./utils";
+import { useCustomers } from "hooks/useCustomer";
+import React from "react";
+import AddSuggestion from "../../components/Modals/AddSuggestion/AddSuggestion";
+import DeleteCustomer from "../../components/Modals/DeleteCustomer/DeleteCustomer";
+import CustomerBooking from "../../components/Modals/CustomerBooking/CustomerBooking";
+import { Customer } from "../../types/customer";
+import { formatDate } from "../../utils/common";
 import AddCustomer from "../Modals/AddCustomer/AddCustomer";
 import UpdateCustomer from "../Modals/UpdateCustomer/UpdateCustomer";
-import DeleteCustomer from "../../components/Modals/DeleteCustomer/DeleteCustomer";
-import AddSuggestion from "../../components/Modals/AddSuggestion/AddSuggestion";
+import { ChevronDownIcon } from "./ChevronDownIcon";
+import { PlusIcon } from "./PlusIcon";
+import { SearchIcon } from "./SearchIcon";
+import { VerticalDotsIcon } from "./VerticalDotsIcon";
+import { columns, genderOptions } from "./customerData";
+import { capitalize } from "./utils";
 
 const genderColorMap: Record<string, ChipProps["color"]> = {
   Male: "primary",
@@ -37,9 +41,7 @@ const genderColorMap: Record<string, ChipProps["color"]> = {
   Other: "warning",
 };
 
-const INITIAL_VISIBLE_COLUMNS = ["name", "gender", "email", "address", "contact",  "company", "actions"];
-
-type Customer = typeof customers[0];
+const INITIAL_VISIBLE_COLUMNS = ["name", "gender", "email", "address", "dateofbirth", "contact", "company", "actions"];
 
 export default function CustomersTable() {
   const [filterValue, setFilterValue] = React.useState("");
@@ -51,19 +53,22 @@ export default function CustomersTable() {
   const { isOpen: isCustomerUpdateOpen, onOpen: onCustomerUpdateOpen, onClose: onCustomerUpdateClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isSuggestionOpen, onOpen: onSuggestionOpen, onClose: onSuggestionClose } = useDisclosure();
+  const { isOpen: isBookingOpen, onOpen: onBookingOpen, onClose: onBookingClose } = useDisclosure();
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
     column: "id",
     direction: "ascending",
   });
   const [page, setPage] = React.useState(1);
 
+  const customerData = useCustomers();
+  const customers = customerData?.data || [];
   const pages = Math.ceil(customers.length / rowsPerPage);
 
   const hasSearchFilter = Boolean(filterValue);
   const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null);
+
   const headerColumns = React.useMemo(() => {
     if (visibleColumns === "all") return columns;
-
     return columns.filter((column) => Array.from(visibleColumns).includes(column.uid));
   }, [visibleColumns]);
 
@@ -72,7 +77,7 @@ export default function CustomersTable() {
 
     if (hasSearchFilter) {
       filteredCustomers = filteredCustomers.filter((customer) =>
-        customer.firstName.toLowerCase().includes(filterValue.toLowerCase())
+        customer.firstname.toLowerCase().includes(filterValue.toLowerCase())
       );
     }
     if (genderFilter !== "all" && Array.from(genderFilter).length !== genderOptions.length) {
@@ -112,7 +117,7 @@ export default function CustomersTable() {
               description: "text-default-500",
             }}
             description={customer.email}
-            name={`${customer.firstName} ${customer.firstName}`}
+            name={`${customer.firstname} ${customer.lastname}`}
           >
             {customer.email}
           </User>
@@ -132,6 +137,14 @@ export default function CustomersTable() {
         return cellValue;
       case "company":
         return customer.company;
+
+      case "dateofbirth":
+        return formatDate(customer.dateofbirth);
+      case "createdAt":
+        return formatDate(customer.createdAt);
+      case "updatedAt":
+        return formatDate(customer.updatedAt);
+
       case "actions":
         return (
           <div className="relative flex justify-end items-center gap-2">
@@ -142,7 +155,10 @@ export default function CustomersTable() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem>View Bookings</DropdownItem>
+                <DropdownItem onPress={() => {
+                  setSelectedCustomer(customer);
+                  onBookingOpen();
+                }}>View Bookings</DropdownItem>
                 <DropdownItem onPress={() => {
                   setSelectedCustomer(customer);
                   onCustomerUpdateOpen();
@@ -151,7 +167,7 @@ export default function CustomersTable() {
                   setSelectedCustomer(customer);
                   onSuggestionOpen();
                 }}>Add Complaints</DropdownItem>
-                 <DropdownItem onPress={() => {
+                <DropdownItem onPress={() => {
                   setSelectedCustomer(customer);
                   onDeleteOpen();
                 }}>Delete Customer</DropdownItem>
@@ -251,9 +267,7 @@ export default function CustomersTable() {
               className="bg-foreground text-background"
               endContent={<PlusIcon width={undefined} height={undefined} />}
               size="sm"
-              onPress={() => {
-                onCustomerOpen();
-              }}
+              onPress={onCustomerOpen}
             >
               Add Customer
             </Button>
@@ -266,24 +280,17 @@ export default function CustomersTable() {
             <select
               className="bg-transparent outline-none text-default-400 text-small"
               onChange={onRowsPerPageChange}
+              value={rowsPerPage}
             >
               <option value="10">10</option>
-              <option value="20" selected>20</option>
+              <option value="20">20</option>
               <option value="30">30</option>
             </select>
           </label>
         </div>
       </div>
     );
-  }, [
-    filterValue,
-    genderFilter,
-    visibleColumns,
-    onSearchChange,
-    onRowsPerPageChange,
-    customers.length,
-    hasSearchFilter,
-  ]);
+  }, [filterValue, genderFilter, visibleColumns, onSearchChange, onRowsPerPageChange, customers.length]);
 
   const bottomContent = React.useMemo(() => {
     return (
@@ -314,73 +321,64 @@ export default function CustomersTable() {
       wrapper: ["max-h-[382px]", "max-w-3xl"],
       th: ["bg-transparent", "text-default-500", "border-b", "border-divider"],
       td: [
-
         "group-data-[first=true]:first:before:rounded-none",
         "group-data-[first=true]:last:before:rounded-none",
-
         "group-data-[middle=true]:before:rounded-none",
-
         "group-data-[last=true]:first:before:rounded-none",
         "group-data-[last=true]:last:before:rounded-none",
       ],
     }),
-    [],
+    []
   );
 
   return (
     <div>
-    <Table
-      isCompact
-      removeWrapper
-      aria-label="Example table with custom cells, pagination and sorting"
-      bottomContent={bottomContent}
-      bottomContentPlacement="outside"
-      checkboxesProps={{
-        classNames: {
-          wrapper: "after:bg-foreground after:text-background text-background",
-        },
-      }}
-      classNames={classNames}
-      selectedKeys={selectedKeys}
-      selectionMode="multiple"
-      sortDescriptor={sortDescriptor}
-      topContent={topContent}
-      topContentPlacement="outside"
-      onSelectionChange={setSelectedKeys}
-      onSortChange={setSortDescriptor}
-    >
-      <TableHeader columns={headerColumns}>
-        {(column) => (
-          <TableColumn
-            key={column.uid}
-            align={column.uid === "actions" ? "center" : "start"}
-            allowsSorting={column.sortable}
-          >
-            {column.name}
-          </TableColumn>
-        )}
-      </TableHeader>
-      <TableBody emptyContent={"No users found"} items={sortedItems}>
-        {(item) => (
-          <TableRow key={item.id}>
-            {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
-     <AddCustomer isOpen={isCustomerOpen}
-     onClose={onCustomerClose} />
-    <UpdateCustomer isOpen={isCustomerUpdateOpen}
-     onClose={onCustomerUpdateClose} customer={selectedCustomer}/>
-    <DeleteCustomer
-        isOpen={isDeleteOpen}
-        onClose={onDeleteClose}
-        customer={selectedCustomer}
-      />
-
-<AddSuggestion isOpen={isSuggestionOpen}
-        onClose={onSuggestionClose}
-        customer={selectedCustomer ?? undefined} />
-     </div>
+      <Table
+        isCompact
+        removeWrapper
+        aria-label="Example table with custom cells, pagination and sorting"
+        bottomContent={bottomContent}
+        bottomContentPlacement="outside"
+        checkboxesProps={{
+          classNames: {
+            wrapper: "after:bg-foreground after:text-background text-background",
+          },
+        }}
+        classNames={classNames}
+        selectedKeys={selectedKeys}
+        selectionMode="multiple"
+        sortDescriptor={sortDescriptor}
+        topContent={topContent}
+        topContentPlacement="outside"
+        onSelectionChange={setSelectedKeys}
+        onSortChange={setSortDescriptor}
+      >
+        <TableHeader columns={headerColumns}>
+          {(column) => (
+            <TableColumn
+              key={column.uid}
+              align={column.uid === "actions" ? "center" : "start"}
+              allowsSorting={column.sortable}
+            >
+              {column.name}
+            </TableColumn>
+          )}
+        </TableHeader>
+        <TableBody emptyContent={"No users found"} items={sortedItems}>
+          {(item) => (
+            <TableRow key={item.id}>
+              {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <AddCustomer isOpen={isCustomerOpen} onClose={onCustomerClose} />
+      <UpdateCustomer isOpen={isCustomerUpdateOpen} onClose={onCustomerUpdateClose} customer={selectedCustomer} />
+      <DeleteCustomer isOpen={isDeleteOpen} onClose={onDeleteClose} customer={selectedCustomer ?? undefined} />
+      <AddSuggestion isOpen={isSuggestionOpen} onClose={onSuggestionClose} customer={selectedCustomer ?? undefined} />
+      {selectedCustomer && isBookingOpen && (
+        <CustomerBooking isOpen={isBookingOpen} onClose={onBookingClose} customer={selectedCustomer} />
+      )}
+    </div>
   );
 }

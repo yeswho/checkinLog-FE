@@ -24,4 +24,13 @@ export enum ROOM_STATUS{
     UNAVAILABLE = 'Unavailable'
 }
 
+export enum BOOKING_STATUS {
+    CANCELLED = 'Cancelled',
+    COMPLETED = 'Completed',
+    NO_SHOW = 'No show',
+    CHECKED_OUT = 'Checked out',
+    CHECKED_IN = 'Checked in',
+    BOOKED = 'Booked'
+}
+
   

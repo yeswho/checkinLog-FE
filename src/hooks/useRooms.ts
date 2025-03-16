@@ -23,6 +23,7 @@ export const useCreateRoom = () => {
         mutationFn: createRoom,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
+            queryClient.invalidateQueries({queryKey: ['roomsDetail']})
             toast.success('Room created successfully');
         },
         onError: (error: any) => {
@@ -37,7 +38,7 @@ export const useUpdateRoom = () => {
     return useMutation({
         mutationFn: updateRoom,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['rooms'] });
+            queryClient.invalidateQueries({ queryKey: ['roomsDetail'] });
             toast.success('Room updated successfully');
         },
         onError: (error: any) => {
@@ -63,7 +64,7 @@ export const useDeleteRoom = () => {
 
 export const useRoomsDetail = () => {
     return useQuery({
-        queryKey: ['rooms'],
+        queryKey: ['roomsDetail'],
         queryFn: getRoomDetails,
     });
 };

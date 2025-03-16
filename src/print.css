@@ -1,0 +1,42 @@
+/* print.css */
+@media print {
+    /* Hide unnecessary elements */
+    .print-hide {
+      display: none;
+    }
+  
+    /* Show elements only when printing */
+    .print-only {
+      display: block;
+    }
+  
+    /* Ensure the table takes full width */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+  
+    /* Add borders to table cells */
+    th, td {
+      border: 1px solid #000;
+      padding: 8px;
+    }
+  
+    /* Ensure the table header is visible on each page */
+    thead {
+      display: table-header-group;
+    }
+  
+    /* Add page breaks to avoid cutting rows */
+    tr {
+      page-break-inside: avoid;
+    }
+  
+    /* Add a title for the printed page */
+    .print-title {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+  }

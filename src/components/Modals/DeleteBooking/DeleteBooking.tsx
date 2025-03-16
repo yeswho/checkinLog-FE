@@ -1,39 +1,46 @@
-import React from "react";
 import {
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
     Button,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
     User
 } from "@nextui-org/react";
 import { toast } from "sonner";
+import { BOOKING_STATUS, PAYMENT_MODE } from "../../../types/enums";
+import { useDeleteBooking } from "hooks/useBooking";
 
 type Room = {
     id: number;
     name: string;
-    floor: string;
-    roomType: string;
+    floor: {
+        name: string;
+    };
+    roomType: {
+        name: string;
+    };
     rate: number;
 };
 
 type Customer = {
     id: number;
-    name: string;
+    firstname: string;
+    lastname: string;
     email: string;
-    contactNumber: string;
+    contact: string;
 };
 
 type Booking = {
-    bookingId: number;
+    id: number;
     customer: Customer;
-    room: Room;
-    checkIn: string;
-    checkOut: string;
-    duration: number;
+    rooms: Room[];
+    check_in: string;
+    check_out: string;
+    payment_mode: PAYMENT_MODE;
     totalPrice: number;
-    status: string;
+    status: BOOKING_STATUS;
+    pax: number;
     createdAt: string;
     updatedAt: string;
 };
@@ -45,17 +52,18 @@ interface DeleteBookingProps {
 }
 
 export default function DeleteBooking({ isOpen, onClose, booking }: DeleteBookingProps) {
+    const { mutate: deleteBooking } = useDeleteBooking();
     const handleSubmit = () => {
         if (!booking) return;
         console.log("Deleted booking:", booking);
-        toast.success("Booking deleted successfully!");
+        deleteBooking(booking.id);
         onClose();
     };
 
     return (
-        <Modal 
+        <Modal
             backdrop="blur"
-            isOpen={isOpen} 
+            isOpen={isOpen}
             onClose={onClose}
             size="2xl"
         >
@@ -74,10 +82,10 @@ export default function DeleteBooking({ isOpen, onClose, booking }: DeleteBookin
                                     <div className="flex flex-col gap-2">
                                         <p className="text-sm font-semibold">Customer Information</p>
                                         <User
-                                            name={booking.customer.name}
+                                            name={`${booking.customer.firstname} ${booking.customer.lastname}`}
                                             description={booking.customer.email}
                                         >
-                                            {booking.customer.contactNumber}
+                                            {booking.customer.contact}
                                         </User>
                                     </div>
                                 )}
@@ -86,12 +94,14 @@ export default function DeleteBooking({ isOpen, onClose, booking }: DeleteBookin
                                 {booking && (
                                     <div className="flex flex-col gap-2">
                                         <p className="text-sm font-semibold">Room Information</p>
-                                        <div className="flex flex-col">
-                                            <p className="text-sm">{booking.room.name}</p>
-                                            <p className="text-xs text-default-500">
-                                                {`${booking.room.floor} - ${booking.room.roomType} - रु.${booking.room.rate}/night`}
-                                            </p>
-                                        </div>
+                                        {booking.rooms.map((room, index) => (
+                                            <div key={room.id} className="flex flex-col">
+                                                <p className="text-sm">{room.name}</p>
+                                                <p className="text-xs text-default-500">
+                                                    {`${room.floor.name} - ${room.roomType.name} - रु.${room.rate}/night`}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
 
@@ -102,15 +112,11 @@ export default function DeleteBooking({ isOpen, onClose, booking }: DeleteBookin
                                         <div className="grid grid-cols-2 gap-2 text-sm">
                                             <div>
                                                 <p className="text-default-500">Check-in:</p>
-                                                <p>{new Date(booking.checkIn).toLocaleDateString()}</p>
+                                                <p>{new Date(booking.check_in).toLocaleDateString()}</p>
                                             </div>
                                             <div>
                                                 <p className="text-default-500">Check-out:</p>
-                                                <p>{new Date(booking.checkOut).toLocaleDateString()}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-default-500">Duration:</p>
-                                                <p>{booking.duration} nights</p>
+                                                <p>{new Date(booking.check_out).toLocaleDateString()}</p>
                                             </div>
                                             <div>
                                                 <p className="text-default-500">Total Price:</p>
@@ -119,6 +125,14 @@ export default function DeleteBooking({ isOpen, onClose, booking }: DeleteBookin
                                             <div>
                                                 <p className="text-default-500">Status:</p>
                                                 <p className="capitalize">{booking.status}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-default-500">Payment Mode:</p>
+                                                <p className="capitalize">{booking.payment_mode}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-default-500">Pax:</p>
+                                                <p>{booking.pax}</p>
                                             </div>
                                         </div>
                                     </div>

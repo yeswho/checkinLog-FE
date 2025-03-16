@@ -7,6 +7,7 @@ import {
   ModalFooter,
   Button
 } from "@nextui-org/react";
+import { useDeleteRoom } from "hooks/useRooms";
 import { toast } from "sonner";
 
 type Room = {
@@ -27,10 +28,10 @@ interface DeleteRoomProps {
 }
 
 export default function DeleteRoom({ isOpen, onClose, room }: DeleteRoomProps) {
+  const deleteRoom = useDeleteRoom();
   const handleSubmit = () => {
     if (!room) return;
-    console.log("Deleted room:", room);
-    toast.success("Room deleted!");
+    deleteRoom.mutateAsync(room.id);
     onClose();
   };
 

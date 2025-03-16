@@ -1,44 +1,45 @@
-import React from "react";
-import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import {
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
     Button,
+    DatePicker,
     Input,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
     Select,
     SelectItem,
-    DatePicker,
     User
 } from "@nextui-org/react";
-import { toast } from "sonner";
+import React from "react";
+import { useUpdateBooking } from "../../../hooks/useBooking";
+import { BOOKING_STATUS, PAYMENT_MODE } from "../../../types/enums";
+import { Customer } from "../../../types/customer";
+
 
 type Room = {
     id: number;
     name: string;
-    floor: string;
-    roomType: string;
+    floor: {
+        name: string;
+    };
+    roomType: {
+        name: string;
+    };
     rate: number;
 };
 
-type Customer = {
-    id: number;
-    name: string;
-    email: string;
-    contactNumber: string;
-};
-
 type Booking = {
-    bookingId: number;
+    id: number;
     customer: Customer;
-    room: Room;
-    checkIn: string;
-    checkOut: string;
-    duration: number;
+    rooms: Room[];
+    check_in: string;
+    check_out: string;
+    payment_mode: PAYMENT_MODE;
     totalPrice: number;
-    status: string;
+    status: BOOKING_STATUS;
+    pax: number;
     createdAt: string;
     updatedAt: string;
 };
@@ -50,11 +51,15 @@ interface UpdateBookingProps {
 }
 
 export default function UpdateBooking({ isOpen, onClose, booking }: UpdateBookingProps) {
+    console.log("Booking Data:", booking);
+    const updateBooking = useUpdateBooking();
+
     const [formData, setFormData] = React.useState({
         checkIn: "",
         checkOut: "",
-        status: "",
-        duration: 0,
+        status: BOOKING_STATUS.BOOKED,
+        paymentMode: PAYMENT_MODE.CASH,
+        pax: 1,
         totalPrice: 0
     });
 
@@ -82,39 +87,22 @@ export default function UpdateBooking({ isOpen, onClose, booking }: UpdateBookin
     React.useEffect(() => {
         if (booking) {
             setFormData({
-                checkIn: booking.checkIn,
-                checkOut: booking.checkOut,
+                checkIn: booking.check_in,
+                checkOut: booking.check_out,
                 status: booking.status,
-                duration: booking.duration,
-                totalPrice: booking.totalPrice
+                paymentMode: booking.payment_mode,
+                totalPrice: booking.totalPrice,
+                pax: booking.pax
             });
         }
     }, [booking]);
 
     const handleChange = (name: string, value: any) => {
         if (name === "checkIn" || name === "checkOut") {
-            setFormData(prev => {
-                const newData = {
-                    ...prev,
-                    [name]: value ? formatDateToString(value) : ""
-                };
-
-                // Calculate duration and total price when dates change
-                if (newData.checkIn && newData.checkOut && booking) {
-                    const checkIn = new Date(newData.checkIn);
-                    const checkOut = new Date(newData.checkOut);
-                    const duration = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-                    const totalPrice = duration * booking.room.rate;
-
-                    return {
-                        ...newData,
-                        duration,
-                        totalPrice
-                    };
-                }
-
-                return newData;
-            });
+            setFormData(prev => ({
+                ...prev,
+                [name]: value ? formatDateToString(value) : ""
+            }));
         } else {
             setFormData(prev => ({
                 ...prev,
@@ -126,23 +114,37 @@ export default function UpdateBooking({ isOpen, onClose, booking }: UpdateBookin
     const handleSubmit = () => {
         if (!booking) return;
 
+        const { rooms, ...bookingWithoutRooms } = booking;
+        console.log(bookingWithoutRooms);
+        console.log(formData);
+        
+        
         const updatedBooking = {
-            ...booking,
-            ...formData,
+            id: booking.id,
+            customer_id: booking.customer.id,
+            room_id: booking.rooms.map(room => room.id),
+            check_in: formData.checkIn,
+            check_out: formData.checkOut,
+            pax: formData.pax,
+            payment_mode: formData.paymentMode,
+            status: formData.status,
             updatedAt: new Date().toISOString()
         };
 
         console.log("Updated Booking Data:", updatedBooking);
-        toast.success("Booking updated successfully!");
+        updateBooking.mutate(updatedBooking);
         onClose();
     };
 
-    const statusOptions = [
-        { value: "confirmed", label: "Confirmed" },
-        { value: "checked-in", label: "Checked In" },
-        { value: "checked-out", label: "Checked Out" },
-        { value: "cancelled", label: "Cancelled" }
-    ];
+    const statusOptions = Object.values(BOOKING_STATUS).map(status => ({
+        value: status,
+        label: status.charAt(0).toUpperCase() + status.slice(1).replace(/-/g, " ")
+    }));
+
+    const paymentModeOptions = Object.values(PAYMENT_MODE).map(mode => ({
+        value: mode,
+        label: mode.charAt(0).toUpperCase() + mode.slice(1).toLowerCase()
+    }));
 
     return (
         <Modal
@@ -162,10 +164,10 @@ export default function UpdateBooking({ isOpen, onClose, booking }: UpdateBookin
                                     <div className="flex flex-col gap-2">
                                         <p className="text-sm font-semibold">Customer Information</p>
                                         <User
-                                            name={booking.customer.name}
+                                            name={`${booking.customer.firstname} ${booking.customer.lastname}`}
                                             description={booking.customer.email}
                                         >
-                                            {booking.customer.contactNumber}
+                                            {booking.customer.contact}
                                         </User>
                                     </div>
                                 )}
@@ -174,12 +176,14 @@ export default function UpdateBooking({ isOpen, onClose, booking }: UpdateBookin
                                 {booking && (
                                     <div className="flex flex-col gap-2">
                                         <p className="text-sm font-semibold">Room Information</p>
-                                        <div className="flex flex-col">
-                                            <p className="text-sm">{booking.room.name}</p>
-                                            <p className="text-xs text-default-500">
-                                                {`${booking.room.floor} - ${booking.room.roomType} - रु.${booking.room.rate}/night`}
-                                            </p>
-                                        </div>
+                                        {booking.rooms.map((room, index) => (
+                                            <div key={room.id} className="flex flex-col">
+                                                <p className="text-sm">{room.name}</p>
+                                                <p className="text-xs text-default-500">
+                                                    {`${room.floor.name} - ${room.roomType.name} - रु.${room.rate}/night`}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
 
@@ -219,20 +223,38 @@ export default function UpdateBooking({ isOpen, onClose, booking }: UpdateBookin
                                         ))}
                                     </Select>
 
-                                    <Input
-                                        isReadOnly
-                                        label="Duration"
-                                        value={`${formData.duration} nights`}
+                                    <Select
+                                        isRequired
+                                        label="Payment Mode"
+                                        placeholder="Select payment mode"
                                         variant="bordered"
-                                    />
+                                        selectedKeys={new Set([formData.paymentMode])}
+                                        onSelectionChange={(keys) => handleChange("paymentMode", Array.from(keys)[0])}
+                                    >
+                                        {paymentModeOptions.map((mode) => (
+                                            <SelectItem key={mode.value} value={mode.value}>
+                                                {mode.label}
+                                            </SelectItem>
+                                        ))}
+                                    </Select>
 
                                     <Input
-                                        isReadOnly
-                                        label="Total Price"
-                                        value={`रु.${formData.totalPrice.toFixed(2)}`}
+                                        isRequired
+                                        type="number"
+                                        label="Pax"
+                                        placeholder="Number of guests"
+                                        value={formData.pax.toString()}
+                                        onChange={(e) => handleChange("pax", parseInt(e.target.value, 10))}
                                         variant="bordered"
                                     />
                                 </div>
+
+                                <Input
+                                    isReadOnly
+                                    label="Total Price"
+                                    value={`रु.${formData.totalPrice}`}
+                                    variant="bordered"
+                                />
                             </div>
                         </ModalBody>
                         <ModalFooter>

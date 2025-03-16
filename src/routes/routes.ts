@@ -8,6 +8,9 @@ export const routes = {
     CUSTOMERS: '/customers',
     ADMIN: '/admin',
     REVENUE: '/revenue',
+    BILLINGS: '/billings',
     FLOOR: '/floor',
+    COMPLAINT: '/complaint',
+    MAINTENANCE: '/maintenance',
     LOGIN: '/login'
 }

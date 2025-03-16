@@ -18,6 +18,7 @@ import AddRoomType from "../AddRoomType/AddRoomType";
 import { useFloors } from "hooks/useFloor";
 import { useRoomTypes } from "hooks/useRoomType";
 import { Label } from "recharts";
+import { Spinner } from "@heroui/react";
 
 
 // const floorOptions = [
@@ -65,7 +66,15 @@ export default function AddRoom({ isOpen, onClose }: { isOpen: boolean; onClose:
     : [];
 
   if (floorIsLoading) {
-    return <div>Loading floors...</div>;
+    return  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+    <Spinner
+      classNames={{
+        base: "scale-150",
+        label: "text-foreground mt-4",
+      }}
+      color="primary"
+    />
+  </div>;;
   }
 
   if (floorFetchError) {
@@ -75,7 +84,15 @@ export default function AddRoom({ isOpen, onClose }: { isOpen: boolean; onClose:
   const roomTypeOptions = roomTypes ? roomTypes.map(roomType => ({ id: roomType.id, Label: roomType.name })) : [];
 
   if (roomTypeIsLoading) {
-    return <div>Loading Room Types</div>
+    return  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+        <Spinner
+          classNames={{
+            base: "scale-150",
+            label: "text-foreground mt-4",
+          }}
+          color="primary"
+        />
+      </div>;
   }
 
   if (roomTypeFetchError) {

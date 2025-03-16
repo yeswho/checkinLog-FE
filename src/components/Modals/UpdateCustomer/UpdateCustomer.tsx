@@ -12,23 +12,25 @@ import {
     SelectItem,
     DatePicker,
 } from "@nextui-org/react";
+import { useUpdateCustomer } from "hooks/useCustomer";
 import { toast } from "sonner";
 
 type GENDER = "MALE" | "FEMALE" | "OTHER";
 
 type Customer = {
     id: number;
-    firstName: string;
-    lastName: string;
+    firstname: string;
+    lastname: string;
     address: string;
     email: string;
     contact: string;
     gender: string;
-    dateOfBirth: string;
+    dateofbirth: string;
     company: string;
     createdAt: string;
     updatedAt: string;
 };
+
 
 interface UpdateCustomerProps {
     isOpen: boolean;
@@ -38,6 +40,7 @@ interface UpdateCustomerProps {
 
 export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCustomerProps) {
 
+    const updateCustomer = useUpdateCustomer();
     const [formData, setFormData] = React.useState({
         firstName: "",
         lastName: "",
@@ -74,10 +77,10 @@ export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCust
     React.useEffect(() => {
         if (customer) {
             setFormData({
-                firstName: customer.firstName,
-                lastName: customer.lastName,
+                firstName: customer.firstname,
+                lastName: customer.lastname,
                 address: customer.address,
-                dateOfBirth: customer.dateOfBirth,
+                dateOfBirth: customer.dateofbirth,
                 contact: customer.contact,
                 email: customer.email,
                 gender: customer.gender,
@@ -100,18 +103,23 @@ export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCust
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!customer) return;
 
         const updatedCustomer = {
             id: customer.id,
-            ...formData,
-            createdAt: customer.createdAt,
+            firstname: formData.firstName,
+            lastname: formData.lastName,
+            address: formData.address,
+            dateofbirth: formData.dateOfBirth,
+            contact: formData.contact,
+            email: formData.email,
+            gender: formData.gender,
+            company: formData.company,
             updatedAt: new Date().toISOString()
         };
 
-        console.log("Updated Customer Data:", updatedCustomer);
-        toast.success("Customer updated!");
+        await updateCustomer.mutateAsync({ ...updatedCustomer, dateofbirth: new Date(updatedCustomer.dateofbirth) });
         onClose();
     };
 
@@ -136,7 +144,7 @@ export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCust
                             <div className="flex flex-col gap-4">
                                 <div className="flex gap-4">
                                     <Input
-                                    isRequired
+                                        isRequired
                                         autoFocus
                                         label="First Name"
                                         placeholder="Enter first name"
@@ -146,7 +154,7 @@ export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCust
                                     />
 
                                     <Input
-                                    isRequired
+                                        isRequired
                                         label="Last Name"
                                         placeholder="Enter last name"
                                         variant="bordered"
@@ -163,7 +171,7 @@ export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCust
                                 />
 
                                 <Input
-                                isRequired
+                                    isRequired
                                     label="Email"
                                     type="email"
                                     placeholder="Enter email"
@@ -173,7 +181,7 @@ export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCust
                                 />
                                 <div className="flex gap-4">
                                     <Input
-                                    isRequired
+                                        isRequired
                                         label="Contact"
                                         placeholder="Enter contact number"
                                         variant="bordered"
@@ -181,7 +189,7 @@ export default function UpdateCustomer({ isOpen, onClose, customer }: UpdateCust
                                         onChange={(e) => handleChange("contact", e.target.value)}
                                     />
                                     <Select
-                                    isRequired
+                                        isRequired
                                         label="Gender"
                                         placeholder="Select gender"
                                         variant="bordered"

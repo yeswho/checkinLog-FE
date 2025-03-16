@@ -4,8 +4,9 @@ export interface Customer {
     lastname: string;
     address: string;
     company: string;
+    email:string;
     contact: string;
-    dateofbirth: Date;
+    dateofbirth: string;
     gender: string;
     createdAt: string;
     updatedAt: string;

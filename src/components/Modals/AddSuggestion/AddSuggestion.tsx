@@ -11,7 +11,8 @@ import {
     Textarea
 } from "@nextui-org/react";
 import React from "react";
-import { toast } from "sonner";
+import { useCreateComplaint } from "../../../hooks/useComplaint";
+import { ComplaintPriority, ComplaintStatus, CreateComplaintDto } from "../../../types/complaint";
 
 type Room = {
     id: number;
@@ -26,10 +27,10 @@ type Room = {
 
 type Customer = {
     id: number;
-    firstName: string;
-    lastName: string;
+    firstname: string;
+    lastname: string;
     address: string;
-    dateOfBirth: string;
+    dateofbirth: string;
     contact: string;
     email: string;
     gender: string;
@@ -37,9 +38,6 @@ type Customer = {
     createdAt: string;
     updatedAt: string;
 };
-
-type ComplaintStatus = 'open' | 'in-progress' | 'resolved';
-type ComplaintPriority = 'low' | 'medium' | 'high';
 
 interface AddSuggestionProps {
     isOpen: boolean;
@@ -63,6 +61,8 @@ export default function AddSuggestion({ isOpen, onClose, room, customer }: AddSu
         priority: "low"
     });
 
+    const createComplaintMutation = useCreateComplaint();
+
     const handleChange = (name: keyof FormData, value: string) => {
         setFormData(prev => ({
             ...prev,
@@ -71,7 +71,7 @@ export default function AddSuggestion({ isOpen, onClose, room, customer }: AddSu
     };
 
     const handleSubmit = () => {
-        const newComplaint = {
+        const newComplaint: CreateComplaintDto = {
             ...formData,
             ...(room && { roomId: room.id }),
             ...(customer && { customerId: customer.id }),
@@ -79,15 +79,14 @@ export default function AddSuggestion({ isOpen, onClose, room, customer }: AddSu
             updatedAt: new Date().toISOString()
         };
 
-        console.log("New Complaint/Suggestion Data:", newComplaint);
-        toast.success("Complaint/Suggestion added successfully!");
+        createComplaintMutation.mutate(newComplaint);
         onClose();
     };
 
-    const contextLabel = room 
+    const contextLabel = room
         ? `Room ${room.name}`
-        : customer 
-            ? `${customer.firstName} ${customer.lastName}`
+        : customer
+            ? `${customer.firstname} ${customer.lastname}`
             : "General";
 
     return (
@@ -110,10 +109,10 @@ export default function AddSuggestion({ isOpen, onClose, room, customer }: AddSu
                                         Room: {room.name} ({room.room_type.name} - Floor {room.floor.name})
                                     </div>
                                 )}
-                                
+
                                 {customer && (
                                     <div className="text-sm text-gray-500">
-                                        Customer: {customer.firstName} {customer.lastName} ({customer.email})
+                                        Customer: {customer.firstname} {customer.lastname} ({customer.email})
                                     </div>
                                 )}
 
@@ -124,7 +123,7 @@ export default function AddSuggestion({ isOpen, onClose, room, customer }: AddSu
                                     value={formData.title}
                                     onChange={(e) => handleChange("title", e.target.value)}
                                 />
-                                
+
                                 <Textarea
                                     label="Description"
                                     placeholder="Enter complaint/suggestion description"

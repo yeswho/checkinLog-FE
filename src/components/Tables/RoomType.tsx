@@ -1,39 +1,42 @@
 import {
-    Button,
-    Dropdown,
-    DropdownItem,
-    DropdownMenu,
-    DropdownTrigger,
-    Input,
-    Pagination,
-    Selection,
-    SortDescriptor,
-    Table,
-    TableBody,
-    TableCell,
-    TableColumn,
-    TableHeader,
-    TableRow,
-    useDisclosure,
-    Chip
+  Button,
+  Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Pagination,
+  Selection,
+  SortDescriptor,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  useDisclosure
 } from "@nextui-org/react";
 import React from "react";
+import { useRoomTypes } from '../../hooks/useRoomType';
 import { ChevronDownIcon } from "./ChevronDownIcon";
 import { PlusIcon } from "./PlusIcon";
+import { columns } from './roomTypeData';
 import { SearchIcon } from "./SearchIcon";
 import { capitalize } from "./utils";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
-import { columns, roomTypes as initialRoomTypes } from './roomTypeData';
+import AddRoomType from "../Modals/AddRoomType/AddRoomType";
+import { Spinner } from "@heroui/react";
 
 const INITIAL_VISIBLE_COLUMNS = ["name", "bed", "ac", "bathroom", "actions"];
 
 export default function RoomTypesTable() {
+  const { data: roomTypes, isLoading, isError } = useRoomTypes();
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [page, setPage] = React.useState(1);
-  const [roomTypes, setRoomTypes] = React.useState(initialRoomTypes);
   const [selectedRoomType, setSelectedRoomType] = React.useState(null);
 
   const { isOpen: isAddOpen, onOpen: onAddOpen, onClose: onAddClose } = useDisclosure();
@@ -53,7 +56,7 @@ export default function RoomTypesTable() {
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
-    let filteredRoomTypes = [...roomTypes];
+    let filteredRoomTypes = roomTypes || []; // Use fetched room types data
 
     if (hasSearchFilter) {
       filteredRoomTypes = filteredRoomTypes.filter((type) =>
@@ -64,7 +67,7 @@ export default function RoomTypesTable() {
     return filteredRoomTypes.sort((a, b) => {
       const first = a[sortDescriptor.column as keyof typeof a];
       const second = b[sortDescriptor.column as keyof typeof b];
-      
+
       const cmp = first < second ? -1 : first > second ? 1 : 0;
 
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
@@ -127,14 +130,14 @@ export default function RoomTypesTable() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem 
+                <DropdownItem
                   onPress={() => {
                     setSelectedRoomType(roomType);
                     onUpdateOpen();
                   }}>
                   Edit Room Type
                 </DropdownItem>
-                <DropdownItem 
+                <DropdownItem
                   onPress={() => {
                     setSelectedRoomType(roomType);
                     onDeleteOpen();
@@ -221,7 +224,7 @@ export default function RoomTypesTable() {
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {roomTypes.length} room types</span>
+          <span className="text-default-400 text-small">Total {roomTypes?.length || 0} room types</span>
           <label className="flex items-center text-default-400 text-small">
             Rows per page:
             <select
@@ -236,7 +239,7 @@ export default function RoomTypesTable() {
         </div>
       </div>
     );
-  }, [filterValue, visibleColumns, onSearchChange, onRowsPerPageChange, roomTypes.length]);
+  }, [filterValue, visibleColumns, onSearchChange, onRowsPerPageChange, roomTypes?.length]);
 
   const bottomContent = React.useMemo(() => {
     return (
@@ -261,6 +264,18 @@ export default function RoomTypesTable() {
       </div>
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+
+  // Handle loading and error states
+  if (isLoading) return <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+    <Spinner
+      classNames={{
+        base: "scale-150",
+        label: "text-foreground mt-4",
+      }}
+      color="primary"
+    />
+  </div>;
+  if (isError) return <div>Error fetching room types. Please try again later.</div>;
 
   return (
     <div>
@@ -301,7 +316,7 @@ export default function RoomTypesTable() {
           )}
         </TableBody>
       </Table>
-
+      <AddRoomType isOpen={isAddOpen} onClose={onAddClose} />
     </div>
   );
 }

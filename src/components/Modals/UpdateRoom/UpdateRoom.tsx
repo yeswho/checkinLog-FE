@@ -1,22 +1,24 @@
-import React from "react";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
   Select,
   SelectItem,
 } from "@nextui-org/react";
+import { useUpdateRoom } from "hooks/useRooms";
+import { useCreateMaintenance } from "hooks/useMaintenance"; // Add this hook
+import React from "react";
 import { toast } from "sonner";
 
 type Room = {
   id: number;
   name: string;
-  floor: {id: number, name: string};
-  room_type: {id: number, name: string};
+  floor: { id: number; name: string };
+  room_type: { id: number; name: string };
   rate: string;
   status: string;
   createdAt: string;
@@ -49,19 +51,21 @@ const roomTypeOptions = [
 ];
 
 const roomStatusOptions = [
-  { value: "AVAILABLE", label: "Available" },
-  { value: "OCCUPIED", label: "Occupied" },
-  { value: "UNDER_MAINTENANCE", label: "Under Maintenance" },
-  { value: "UNAVAILABLE", label: "Unavailable" },
+  { value: "Available", label: "Available" },
+  { value: "Occupied", label: "Occupied" },
+  { value: "Under maintainance", label: "Under Maintenance" },
+  { value: "Unavailable", label: "Unavailable" },
 ];
 
 export default function UpdateRoom({ isOpen, onClose, room }: UpdateRoomProps) {
+  const updateRoom = useUpdateRoom();
+  const createMaintenance = useCreateMaintenance();
   const [formData, setFormData] = React.useState({
     name: "",
     floor_id: new Set<string>([]),
     roomType_id: new Set<string>([]),
     rate: "",
-    status: ""
+    status: "",
   });
 
   React.useEffect(() => {
@@ -71,44 +75,53 @@ export default function UpdateRoom({ isOpen, onClose, room }: UpdateRoomProps) {
         floor_id: new Set([room.floor.id.toString()]),
         roomType_id: new Set([room.room_type.id.toString()]),
         rate: room.rate,
-        status: room.status.toUpperCase()
+        status: room.status,
       });
     }
   }, [room]);
 
   const handleChange = (name: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!room) return;
-    
+  
     const updatedRoom = {
       id: room.id,
       name: formData.name,
-      floor: Array.from(formData.floor_id)[0],
-      room_type: Array.from(formData.roomType_id)[0],
+      floor_id: Array.from(formData.floor_id)[0],
+      roomType_id: Array.from(formData.roomType_id)[0],
       rate: formData.rate,
       status: formData.status,
-      createdAt: room.createdAt,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
-    
-    console.log("Updated Room Data:", updatedRoom);
-    toast.success("Room updated!");
-    onClose();
+  
+    try {
+      await updateRoom.mutateAsync(updatedRoom);
+  
+      if (formData.status === "Under maintainance") {
+        const maintenanceData = {
+          room_id: room.id, 
+          reason: "Maintenance required",
+          startDate: new Date().toISOString(),
+          expectedEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await createMaintenance.mutateAsync(maintenanceData);
+      }
+      onClose();
+    } catch (error) {
+      toast.error("Failed to update room");
+    }
   };
 
   return (
-    <Modal 
-      backdrop={"blur"} 
-      isOpen={isOpen} 
-      onClose={onClose}
-      size="2xl"
-    >
+    <Modal backdrop={"blur"} isOpen={isOpen} onClose={onClose} size="2xl">
       <ModalContent>
         {(onClose) => (
           <>
@@ -123,7 +136,7 @@ export default function UpdateRoom({ isOpen, onClose, room }: UpdateRoomProps) {
                   value={formData.name}
                   onChange={(e) => handleChange("name", e.target.value)}
                 />
-                
+
                 <Select
                   label="Floor"
                   placeholder="Select floor"

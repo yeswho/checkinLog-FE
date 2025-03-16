@@ -16,32 +16,32 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-  useDisclosure
+  useDisclosure,
 } from "@nextui-org/react";
 import React from "react";
-
-import AddBooking from "../../components/Modals/AddBooking/AddBooking";
 import AddRoom from "../../components/Modals/AddRoom/AddRoom";
-import AddSuggestion from "../../components/Modals/AddSuggestion/AddSuggestion";
-import DeleteRoom from "../../components/Modals/DeleteRoom/DeleteRoom";
 import UpdateRoom from "../../components/Modals/UpdateRoom/UpdateRoom";
+import DeleteRoom from "../../components/Modals/DeleteRoom/DeleteRoom";
 import ViewRoom from "../../components/Modals/ViewRoom/ViewRoom";
+import AddBooking from "../../components/Modals/AddBooking/AddBooking";
+import AddSuggestion from "../../components/Modals/AddSuggestion/AddSuggestion";
 import { ChevronDownIcon } from "./ChevronDownIcon";
 import { PlusIcon } from "./PlusIcon";
 import { SearchIcon } from "./SearchIcon";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
 import { columns, statusOptions } from "./data";
 import { capitalize } from "./utils";
-import { useRoomsDetail } from "../../hooks/useRooms"
+import { useRoomsDetail } from "../../hooks/useRooms";
+import { Spinner } from "@heroui/react";
 
 const statusColorMap: Record<string, ChipProps["color"]> = {
   Available: "success",
   Occupied: "danger",
-  "Under maintenance": "warning",
+  "Under maintainance": "warning",
   Unavailable: "default",
 };
 
-const INITIAL_VISIBLE_COLUMNS = ["name", "floor", "room_type", "status", "actions", "reserve"];
+const INITIAL_VISIBLE_COLUMNS = ["name", "floor", "room_type", "rate", "status", "actions", "reserve"];
 
 type Room = {
   id: number;
@@ -64,56 +64,62 @@ type Room = {
     startDate: string;
     expectedEndDate: string;
   } | null;
-
   createdAt: string;
   updatedAt: string;
 };
 
 export default function RoomTable() {
+  const { data: roomData, isLoading, isError } = useRoomsDetail();
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
   const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
   const [rowsPerPage, setRowsPerPage] = React.useState(20);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [page, setPage] = React.useState(1);
   const [selectedRoom, setSelectedRoom] = React.useState<Room | null>(null);
+
+  const { isOpen: isRoomOpen, onOpen: onRoomOpen, onClose: onRoomClose } = useDisclosure();
   const { isOpen: isUpdateOpen, onOpen: onUpdateOpen, onClose: onUpdateClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isBookingOpen, onOpen: onBookingOpen, onClose: onBookingClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
   const { isOpen: isSuggestionOpen, onOpen: onSuggestionOpen, onClose: onSuggestionClose } = useDisclosure();
+
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
     column: "id",
     direction: "ascending",
   });
 
-  const { data: roomData, isLoading, isError } = useRoomsDetail();
 
-  const transformRooms = (rooms: Room[]) => {
+  const transformRooms = (rooms: Room[] = []) => {
     return rooms.map((room) => ({
       ...room,
       occupiedDetails: room.occupiedDetails
         ? {
-            ...room.occupiedDetails,
-            customer: {
-              firstName: room.occupiedDetails.customer.firstName ?? "",
-              lastName: room.occupiedDetails.customer.lastName ?? "",
-              contact: room.occupiedDetails.customer.contact ?? "",
-            },
-          }
+          ...room.occupiedDetails,
+          customer: {
+            firstName: room.occupiedDetails.customer.firstName ?? "",
+            lastName: room.occupiedDetails.customer.lastName ?? "",
+            contact: room.occupiedDetails.customer.contact ?? "",
+          },
+        }
         : null,
-        maintenanceDetails: room.maintenanceDetails
+      maintenanceDetails: room.maintenanceDetails
         ? {
-            ...room.maintenanceDetails,
-          }
+          ...room.maintenanceDetails,
+        }
         : null,
     }));
   };
 
 
-  const rooms = isLoading ? [] : isError ? [] : roomData ? transformRooms(roomData.data) : [];
+  console.log("RoomData ", roomData);
 
-  const [page, setPage] = React.useState(1);
+  const rooms = React.useMemo(() => {
+    return roomData ? transformRooms(roomData) : [];
+  }, [roomData]);
+
+  console.log("Rooms ", rooms);
 
   const pages = Math.ceil(rooms.length / rowsPerPage);
 
@@ -129,12 +135,10 @@ export default function RoomTable() {
 
     if (hasSearchFilter) {
       filteredRooms = filteredRooms.filter((room) =>
-        room.name.toLowerCase().includes(filterValue.toLowerCase()),
+        room?.name.toLowerCase().includes(filterValue.toLowerCase()),
       );
     }
     if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-      console.log(statusFilter);
-
       filteredRooms = filteredRooms.filter((room) =>
         Array.from(statusFilter).includes(room.status),
       );
@@ -159,35 +163,30 @@ export default function RoomTable() {
         return 0;
       }
 
-      // Special handling for nested object properties
       if (sortDescriptor.column === "floor") {
-        first = a.floor.name;
-        second = b.floor.name;
+        first = a.floor?.name;
+        second = b.floor?.name;
       } else if (sortDescriptor.column === "room_type") {
-        first = a.room_type.name;
-        second = b.room_type.name;
+        first = a.room_type?.name;
+        second = b.room_type?.name;
       } else {
         first = a[sortDescriptor.column as keyof Room];
         second = b[sortDescriptor.column as keyof Room];
       }
 
-      // Handle different types of comparisons
       if (typeof first === 'string' && typeof second === 'string') {
         return sortDescriptor.direction === "ascending"
           ? first.localeCompare(second)
           : second.localeCompare(first);
       }
 
-      // Handle numeric comparisons (including string numbers)
       if (sortDescriptor.column === "rate") {
-        // Convert rate strings to numbers for comparison
         const firstNum = parseFloat(first);
         const secondNum = parseFloat(second);
         const cmp = firstNum < secondNum ? -1 : firstNum > secondNum ? 1 : 0;
         return sortDescriptor.direction === "descending" ? -cmp : cmp;
       }
 
-      // Handle date comparisons
       if (sortDescriptor.column === "createdAt" || sortDescriptor.column === "updatedAt") {
         const firstDate = new Date(first).getTime();
         const secondDate = new Date(second).getTime();
@@ -195,41 +194,25 @@ export default function RoomTable() {
         return sortDescriptor.direction === "descending" ? -cmp : cmp;
       }
 
-      // Default comparison for other types
       const cmp = first < second ? -1 : first > second ? 1 : 0;
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
   }, [sortDescriptor, items]);
 
   const renderCell = React.useCallback((room: Room, columnKey: React.Key) => {
-
-
+    if (!room) return null;
     switch (columnKey) {
-      case "id":
-        return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small">{room.id}</p>
-          </div>
-        );
       case "name":
         return (
           <div className="flex flex-col">
-            <p className="text-bold text-small">{room.name}</p>
-            <p className="text-bold text-tiny text-default-500">Floor {room.floor.name}</p>
+            <p className="text-bold text-small">{room?.name}</p>
+            <p className="text-bold text-tiny text-default-500">Floor {room.floor?.name}</p>
           </div>
         );
       case "floor":
-        return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small">{room.floor.name}</p>
-          </div>
-        );
+        return room.floor?.name;
       case "room_type":
-        return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small">{room.room_type.name}</p>
-          </div>
-        );
+        return room.room_type?.name;
       case "status":
         return (
           <Chip
@@ -242,18 +225,7 @@ export default function RoomTable() {
           </Chip>
         );
       case "rate":
-        return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small">रु{room.rate}</p>
-          </div>
-        );
-      case "createdAt":
-      case "updatedAt":
-        return (
-          <div className="flex flex-col">
-            <p className="text-bold text-small">{String(room.createdAt)}</p>
-          </div>
-        );
+        return `रु${room.rate}`;
       case "actions":
         return (
           <div className="relative flex justify-end items-center gap-2">
@@ -264,49 +236,26 @@ export default function RoomTable() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu>
-                <DropdownItem onPress={() => {
-                  setSelectedRoom(room);
-                  onViewOpen();
-                }}>View Details</DropdownItem>
-                <DropdownItem onPress={() => {
-                  setSelectedRoom(room);
-                  onSuggestionOpen();
-                }}>Add Complaint</DropdownItem>
-                <DropdownItem onPress={() => {
-                  setSelectedRoom(room);
-                  onUpdateOpen();
-                }}>Edit Room</DropdownItem>
-                <DropdownItem onPress={() => {
-                  setSelectedRoom(room);
-                  onDeleteOpen();
-                }}>Delete Room</DropdownItem>
+                <DropdownItem onPress={() => { setSelectedRoom(room); onViewOpen(); }}>View Details</DropdownItem>
+                <DropdownItem onPress={() => { setSelectedRoom(room); onSuggestionOpen(); }}>Add Complaint</DropdownItem>
+                <DropdownItem onPress={() => { setSelectedRoom(room); onUpdateOpen(); }}>Edit Room</DropdownItem>
+                <DropdownItem onPress={() => { setSelectedRoom(room); onDeleteOpen(); }}>Delete Room</DropdownItem>
               </DropdownMenu>
             </Dropdown>
           </div>
         );
       case "reserve":
-        return (
-          <div className="flex flex-col items-center justify-center">
-            {room.status === "Available" && (
-              <Button
-                size="sm"
-                className="rounded-full dark bg-default text-foreground hover:opacity-90 "
-                onPress={() => {
-                  setSelectedRoom(room);
-                  onBookingOpen();
-                }}
-              >
-                Reserve Now
-              </Button>
-            )}
-          </div>
-
-        );
-
+        return room.status === "Available" ? (
+          <Button
+            size="sm"
+            className="rounded-full dark bg-default text-foreground hover:opacity-90"
+            onPress={() => { setSelectedRoom(room); onBookingOpen(); }}
+          >
+            Reserve Now
+          </Button>
+        ) : null;
       default:
-        return <div className="flex flex-col">
-          <p className="text-bold text-small">{String("N/A")}</p>
-        </div>;
+        return String(room[columnKey as keyof Room]);
     }
   }, []);
 
@@ -345,11 +294,7 @@ export default function RoomTable() {
           <div className="flex gap-3">
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
-                <Button
-                  endContent={<ChevronDownIcon className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
+                <Button endContent={<ChevronDownIcon className="text-small" />} size="sm" variant="flat">
                   Status
                 </Button>
               </DropdownTrigger>
@@ -363,18 +308,14 @@ export default function RoomTable() {
               >
                 {statusOptions.map((status) => (
                   <DropdownItem key={status.uid} className="capitalize">
-                    {capitalize(status.name)}
+                    {capitalize(status?.name)}
                   </DropdownItem>
                 ))}
               </DropdownMenu>
             </Dropdown>
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
-                <Button
-                  endContent={<ChevronDownIcon className="text-small" />}
-                  size="sm"
-                  variant="flat"
-                >
+                <Button endContent={<ChevronDownIcon className="text-small" />} size="sm" variant="flat">
                   Columns
                 </Button>
               </DropdownTrigger>
@@ -388,7 +329,7 @@ export default function RoomTable() {
               >
                 {columns.map((column) => (
                   <DropdownItem key={column.uid} className="capitalize">
-                    {capitalize(column.name)}
+                    {capitalize(column?.name)}
                   </DropdownItem>
                 ))}
               </DropdownMenu>
@@ -397,7 +338,7 @@ export default function RoomTable() {
               className="bg-foreground text-background"
               endContent={<PlusIcon width={undefined} height={undefined} />}
               size="sm"
-              onPress={onOpen}
+              onPress={onRoomOpen}
             >
               Add Room
             </Button>
@@ -412,22 +353,14 @@ export default function RoomTable() {
               onChange={onRowsPerPageChange}
             >
               <option value="10">10</option>
-              <option value="20" selected>20</option>
+              <option value="20">20</option>
               <option value="30">30</option>
             </select>
           </label>
         </div>
       </div>
     );
-  }, [
-    filterValue,
-    statusFilter,
-    visibleColumns,
-    onSearchChange,
-    onRowsPerPageChange,
-    rooms.length,
-    hasSearchFilter,
-  ]);
+  }, [filterValue, statusFilter, visibleColumns, onSearchChange, onRowsPerPageChange, rooms.length]);
 
   const bottomContent = React.useMemo(() => {
     return (
@@ -453,20 +386,16 @@ export default function RoomTable() {
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
-  const classNames = React.useMemo(
-    () => ({
-      wrapper: ["max-h-[382px]", "max-w-3xl"],
-      th: ["bg-transparent", "text-default-500", "border-b", "border-divider"],
-      td: [
-        "group-data-[first=true]:first:before:rounded-none",
-        "group-data-[first=true]:last:before:rounded-none",
-        "group-data-[middle=true]:before:rounded-none",
-        "group-data-[last=true]:first:before:rounded-none",
-        "group-data-[last=true]:last:before:rounded-none",
-      ],
-    }),
-    [],
-  );
+  if (isLoading) return <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+    <Spinner
+      classNames={{
+        base: "scale-150",
+        label: "text-foreground mt-4",
+      }}
+      color="primary"
+    />
+  </div>;
+  if (isError) return <div>Error fetching rooms</div>;
 
   return (
     <div>
@@ -481,7 +410,6 @@ export default function RoomTable() {
             wrapper: "after:bg-foreground after:text-background text-background",
           },
         }}
-        classNames={classNames}
         selectedKeys={selectedKeys}
         selectionMode="multiple"
         sortDescriptor={sortDescriptor}
@@ -497,7 +425,7 @@ export default function RoomTable() {
               align={column.uid === "actions" || column.uid === "reserve" ? "center" : "start"}
               allowsSorting={column.sortable}
             >
-              {column.name}
+              {column?.name}
             </TableColumn>
           )}
         </TableHeader>
@@ -509,30 +437,14 @@ export default function RoomTable() {
           )}
         </TableBody>
       </Table>
-      <AddRoom isOpen={isOpen} onClose={onClose} />
-      <UpdateRoom
-        isOpen={isUpdateOpen}
-        onClose={onUpdateClose}
-        room={selectedRoom}
-      />
-      <DeleteRoom
-        isOpen={isDeleteOpen}
-        onClose={onDeleteClose}
-        room={selectedRoom}
-      />
-      <AddBooking
-        isOpen={isBookingOpen}
-        onClose={onBookingClose}
-        room={selectedRoom}
-      />
-      <ViewRoom
-        isOpen={isViewOpen}
-        onClose={onViewClose}
-        room={selectedRoom}
-      />
-      <AddSuggestion isOpen={isSuggestionOpen}
-        onClose={onSuggestionClose}
-        room={selectedRoom ?? undefined} />
+      <AddRoom isOpen={isRoomOpen} onClose={onRoomClose} />
+      <UpdateRoom isOpen={isUpdateOpen} onClose={onUpdateClose} room={selectedRoom} />
+      <DeleteRoom isOpen={isDeleteOpen} onClose={onDeleteClose} room={selectedRoom} />
+      {selectedRoom && isBookingOpen && (
+        <AddBooking isOpen={isBookingOpen} onClose={onBookingClose} room={selectedRoom} />
+      )}
+      <ViewRoom isOpen={isViewOpen} onClose={onViewClose} room={selectedRoom} />
+      <AddSuggestion isOpen={isSuggestionOpen} onClose={onSuggestionClose} room={selectedRoom ?? undefined} />
     </div>
   );
 }

@@ -7,17 +7,18 @@ import {
   ModalFooter,
   Button
 } from "@nextui-org/react";
+import { useDeleteCustomer } from "hooks/useCustomer";
 import { toast } from "sonner";
 
 type Customer = {
   id: number;
-  firstName: string;
-  lastName: string;
+  firstname: string;
+  lastname: string;
+  dateofbirth: string;
   address: string;
   email: string;
   contact: string;
   gender: string;
-  dateOfBirth: string;
   company: string;
   createdAt: string;
   updatedAt: string;
@@ -26,14 +27,16 @@ type Customer = {
 interface DeleteCustomerProps {
   isOpen: boolean;
   onClose: () => void;
-  customer: Customer | null;
+  customer?: Customer;
 }
 
 export default function DeleteCustomer({ isOpen, onClose, customer }: DeleteCustomerProps) {
+
+  const deleteCustomer = useDeleteCustomer();
+
   const handleSubmit = () => {
     if (!customer) return;
-    console.log("Deleted customer:", customer);
-    toast.success("Customer deleted!");
+    deleteCustomer.mutateAsync(customer.id);
     onClose();
   };
 
@@ -48,7 +51,7 @@ export default function DeleteCustomer({ isOpen, onClose, customer }: DeleteCust
                 <p className="text-lg">
                   Are you sure you want to delete the customer{" "}
                   <span className="font-bold">
-                    {customer?.firstName} {customer?.lastName}
+                    {customer?.firstname} {customer?.lastname}
                   </span>?
                 </p>
                 {customer && (
@@ -70,7 +73,7 @@ export default function DeleteCustomer({ isOpen, onClose, customer }: DeleteCust
                     </p>
                     <p>
                       <strong>Date of Birth:</strong>{" "}
-                      {new Date(customer.dateOfBirth).toLocaleDateString()}
+                      {new Date(customer.dateofbirth).toLocaleDateString()}
                     </p>
                   </div>
                 )}

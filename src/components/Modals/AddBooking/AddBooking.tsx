@@ -1,80 +1,104 @@
-import React, { useEffect } from "react";
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
-  Select,
-  SelectItem,
   Chip,
   DatePicker,
   Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  SelectItem,
   useDisclosure,
 } from "@nextui-org/react";
-import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
-import { toast } from "sonner";
-import AddCustomer from "../AddCustomer/AddCustomer";
+import { useCreateBooking } from "hooks/useBooking";
+import { useCustomers } from "hooks/useCustomer";
+import { useRooms } from "hooks/useRooms";
+import React, { useEffect } from "react";
+import { BOOKING_STATUS, PAYMENT_MODE } from "../../../types/enums";
 import { PlusIcon } from "../../Tables/PlusIcon";
-
-// Sample data - replace with your actual data
-const customerOptions = [
-  { id: 1, label: "John Doe" },
-  { id: 2, label: "Jane Smith" },
-  { id: 3, label: "Bob Johnson" },
-];
-
-const roomOptions = [
-  { id: 1, label: "101 - Single Bed AC" },
-  { id: 2, label: "102 - Double Bed AC" },
-  { id: 3, label: "201 - Luxury Suite" },
-];
+import AddCustomer from "../AddCustomer/AddCustomer";
 
 const paymentModeOptions = [
-  { value: "CASH", label: "Cash" },
-  { value: "CARD", label: "Card" },
+  { value: "Cash", label: "Cash" },
+  { value: "Card", label: "Card" },
+  { value: "Online", label: "Online" },
   { value: "UPI", label: "UPI" },
-  { value: "BANK_TRANSFER", label: "Bank Transfer" },
+  { value: "Cheque", label: "Cheque" },
+  { value: "Other", label: "Other" },
 ];
+
+const BookingStatusOptions = [
+  { value: "Cancelled", label: "Cancelled" },
+  { value: "Completed", label: "Completed" },
+  { value: "No show", label: "No show" },
+  { value: "Checked out", label: "Checked out" },
+  { value: "Checked in", label: "Checked in" },
+  { value: "Booked", label: "Booked" },
+];
+
 
 export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean; onClose: () => void; room: any }) {
   const [formData, setFormData] = React.useState({
-    customer_id: "",
+    customer: "",
+    customerLabel: "",
     room_ids: [] as string[],
     checkIn: null as CalendarDate | null,
     checkOut: null as CalendarDate | null,
     numberOfGuests: "",
-    paymentMode: "CASH",
+    paymentMode: "Cash" as PAYMENT_MODE,
+    status: "Booked" as BOOKING_STATUS,
   });
 
-  const [selectedRooms, setSelectedRooms] = React.useState<Array<typeof roomOptions[0]>>([]);
+  const createBooking = useCreateBooking();
+
+  const [selectedRooms, setSelectedRooms] = React.useState<Array<{ id: number; label: string }>>([]);
   const { isOpen: isCustomerOpen, onOpen: onCustomerOpen, onClose: onCustomerClose } = useDisclosure();
 
-  useEffect(() => {
-    if (room?.id && isOpen) {
-      setSelectedRooms([{
-        id: room.id,
-        label: room.name || `Room ${room.id}`
-      }]);
-      setFormData(prev => ({
-        ...prev,
-        room_ids: [room.id.toString()]
-      }));
-    }
-  }, [room, isOpen]);
+  // Fetch customers and rooms using hooks
+  const { data: customers = [], isLoading: isCustomersLoading } = useCustomers();
+  const { data: rooms = [], isLoading: isRoomsLoading } = useRooms();
 
-  const handleChange = (name: string, value: any) => {
+useEffect(() => {
+  if (room?.id && isOpen) {
+    setSelectedRooms([{
+      id: room.id,
+      label: room?.name || `Room ${room?.id}`  // Use room.name with a fallback
+    }]);
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      room_ids: [room.id.toString()]
     }));
+  }
+}, [room, isOpen]);
+
+  const handleChange = (name: string, value: any) => {
+    if (name === "customer") {
+      const customer = customers.find(c => c.id.toString() === value);
+      if (customer) {
+        setFormData(prev => ({
+          ...prev,
+          customer: value
+        }));
+      }
+    }
+    else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleRoomSelect = (roomId: string) => {
-    const room = roomOptions.find(r => r.id.toString() === roomId);
+    const room = rooms.find(r => r.id.toString() === roomId);
     if (room && !selectedRooms.find(r => r.id.toString() === roomId)) {
-      setSelectedRooms([...selectedRooms, room]);
+      setSelectedRooms([...selectedRooms, { 
+        id: room.id, 
+        label: room?.name || `Room ${room.id}` 
+      }]);
       setFormData(prev => ({
         ...prev,
         room_ids: [...prev.room_ids, roomId]
@@ -91,8 +115,21 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
   };
 
   const handleSubmit = () => {
-    console.log("Form Data:", formData);
-    toast.success("Booking added successfully!");
+
+    const payload = {
+      customer_id: parseInt(formData.customer),
+      room_id: formData.room_ids.map(id => parseInt(id)),
+      check_in: formData.checkIn ? new Date(formData.checkIn.year, formData.checkIn.month - 1, formData.checkIn.day, 0, 0, 0) : new Date(),
+      check_out: formData.checkOut ? new Date(formData.checkOut.year, formData.checkOut.month - 1, formData.checkOut.day, 0, 0, 0) : new Date(),
+      pax: parseInt(formData.numberOfGuests),
+      payment_mode: formData.paymentMode,
+      status: formData.status,
+    }
+
+    console.log("New booking payload:", payload);
+    
+    createBooking.mutate(payload);
+
     onClose();
   };
 
@@ -117,12 +154,12 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
                       label="Customer"
                       placeholder="Select customer"
                       variant="bordered"
-                      selectedKeys={formData.customer_id ? [formData.customer_id] : []}
-                      onChange={(e) => handleChange("customer_id", e.target.value)}
+                      onChange={(e) => handleChange("customer", e.target.value)}
+                      isLoading={isCustomersLoading}
                     >
-                      {customerOptions.map((customer) => (
+                      {customers.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
-                          {customer.label}
+                          {customer?.firstname + " " + customer?.lastname}
                         </SelectItem>
                       ))}
                     </Select>
@@ -130,9 +167,7 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
                       isIconOnly
                       size="sm"
                       variant="flat"
-                      onPress={() => {
-                        onCustomerOpen();
-                      }}
+                      onPress={onCustomerOpen}
                       className="mb-2"
                     >
                       <PlusIcon size={18} width={undefined} height={undefined} />
@@ -145,16 +180,17 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
                       placeholder="Select rooms"
                       variant="bordered"
                       onChange={(e) => handleRoomSelect(e.target.value)}
+                      isLoading={isRoomsLoading}
                     >
-                      {roomOptions.map((room) => (
+                      {rooms.map((room) => (
                         <SelectItem key={room.id} value={room.id}>
-                          {room.label}
+                          {room?.name}
                         </SelectItem>
                       ))}
                     </Select>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      {selectedRooms.length != 0 && <p className="text-sm font-medium">Selected rooms:</p>}
+                      {selectedRooms.length !== 0 && <p className="text-sm font-medium">Selected rooms:</p>}
                       {selectedRooms.map((room) => (
                         <Chip
                           key={room.id}
@@ -208,6 +244,20 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
                       </SelectItem>
                     ))}
                   </Select>
+
+                  <Select
+                    label="Booking Status"
+                    placeholder="Select booking status"
+                    variant="bordered"
+                    selectedKeys={formData.status ? [formData.status] : []}
+                    onChange={(e) => handleChange("status", e.target.value)}
+                  >
+                    {BookingStatusOptions.map((mode) => (
+                      <SelectItem key={mode.value} value={mode.value}>
+                        {mode.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
                 </div>
               </ModalBody>
               <ModalFooter>
@@ -222,8 +272,7 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
           )}
         </ModalContent>
       </Modal>
-      <AddCustomer isOpen={isCustomerOpen}
-        onClose={onCustomerClose} />
+      <AddCustomer isOpen={isCustomerOpen} onClose={onCustomerClose} />
     </div>
   );
 }
