@@ -22,7 +22,7 @@ export default function AddRoomType({
     name: "",
     bed: "",
     ac: false,
-    bathroom: true,
+    bathroom: false,
   });
 
   const createRoomType = useCreateRoomType();

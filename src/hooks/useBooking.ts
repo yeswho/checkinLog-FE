@@ -10,6 +10,7 @@ import {
     getBookingsByCustomerId,
     getBookingsInDateRange,
     getTopCustomersWithHighestBookings,
+    searchBookings,
     updateBooking,
     updateBookingRate,
 } from '../api/booking';
@@ -23,14 +24,28 @@ import {
     GenerateBillDto,
     TopCustomer
 } from '../types/booking';
+import { useDebounce } from 'use-debounce';
 
 // Fetch all bookings
-export const useBookings = () => {
-    return useQuery<Booking[]>({
-        queryKey: ['bookings'],
-        queryFn: getBookings,
+export const useBookings = (page: number = 1, limit: number = 10) => {
+    return useQuery<{ data: Booking[]; pagination: any }>({
+        queryKey: ['bookings', page, limit],
+        queryFn: () => getBookings(page, limit),
     });
 };
+
+export const useBookingsSearch = (query: string = "", page: number = 1, limit: number = 10) => {
+    const [debouncedQuery] = useDebounce(query, 500);
+  
+    return useQuery<{ data: any[]; total: number }>({
+      queryKey: ["bookings", debouncedQuery, page, limit],
+      queryFn: () => searchBookings(debouncedQuery, page, limit),
+      placeholderData: { data: [], total: 0 },
+      initialData: { data: [], total: 0 },
+    });
+  };
+  
+
 
 // Fetch a single booking by ID
 export const useBooking = (id: number) => {
@@ -121,10 +136,10 @@ export const useBookingsInDateRange = (
 // Fetch bookings by customer ID
 export const useBookingsByCustomerId = (customerId: number) => {
     return useQuery<BookingsResponse>({
-      queryKey: ['bookings', 'customer', customerId],
-      queryFn: () => getBookingsByCustomerId(customerId),
+        queryKey: ['bookings', 'customer', customerId],
+        queryFn: () => getBookingsByCustomerId(customerId),
     });
-  };
+};
 
 // Fetch booking details (including room, customer, floor, and room type details)
 export const useBookingDetails = (bookingId: number) => {
@@ -145,16 +160,16 @@ export const useTopCustomersWithHighestBookings = (limit: number) => {
 // Generate a bill for a booking
 export const useGenerateBill = () => {
     const queryClient = useQueryClient();
-  
+
     return useMutation({
-      mutationFn: ({ bookingId, billData }: { bookingId: number; billData: GenerateBillDto }) =>
-        generateBill(bookingId, billData),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['bookings'] }); 
-        toast.success('Booking bill generated successfully');
-      },
-      onError: (error: any) => {
-        toast.error(error.response?.data?.message || 'Failed to generate booking bill');
-      },
+        mutationFn: ({ bookingId, billData }: { bookingId: number; billData: GenerateBillDto }) =>
+            generateBill(bookingId, billData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['bookings'] });
+            toast.success('Booking bill generated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to generate booking bill');
+        },
     });
-  };
+};

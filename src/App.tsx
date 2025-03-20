@@ -18,6 +18,7 @@ import { createRoute } from './utils/routes';
 import ProtectedRoute from './components/ProtectedRoutes';
 import { Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
+import ProfilePage from "pages/Profile/Profile";
 
 
 function AnimatedRoutes() {
@@ -56,7 +57,7 @@ function AnimatedRoutes() {
           transition={{ duration: 0.5 }}
         >
           <Routes location={location}>
-            <Route path={createRoute([routes.ROOMS])} element={<ProtectedRoute><Layout><Room /></Layout></ProtectedRoute>} />
+            <Route path={createRoute([routes.ROOMS])} element={<Layout><Room /></Layout>}/>
             <Route path={createRoute([routes.HOME])} element={<Layout><Dashboard /></Layout>} />
             <Route path={createRoute([routes.CUSTOMERS])} element={<Layout><Customer /></Layout>} />
             <Route path={createRoute([routes.BOOKINGS])} element={<Layout><Bookings /></Layout>} />
@@ -65,6 +66,7 @@ function AnimatedRoutes() {
             <Route path={createRoute([routes.COMPLAINT])} element={<Layout><Complaint /></Layout>} />
             <Route path={createRoute([routes.MAINTENANCE])} element={<Layout><Maintenance /></Layout>} />
             <Route path={createRoute([routes.BILLINGS])} element={<Layout><Billings/></Layout>} />
+            <Route path={createRoute([routes.PROFILE])} element={<Layout><ProfilePage/></Layout>} />
             <Route path={createRoute([routes.LOGIN])} element={<LoginPage />} />
           </Routes>
         </motion.div>

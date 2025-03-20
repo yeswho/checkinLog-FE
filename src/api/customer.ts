@@ -1,8 +1,17 @@
 import axiosClient from './client';
 import { Customer, CreateCustomerDto } from '../types/customer';
 
-export const getCustomers = async () => {
-  const { data } = await axiosClient.get<Customer[]>('/customers');
+export const getCustomers = async (page: number = 1, limit: number = 10): Promise<{ data: Customer[]; pagination: any }> => {
+  const { data } = await axiosClient.get<{ data: Customer[]; pagination: any }>('/customers', {
+    params: { page, limit },
+  });
+  return data;
+};
+
+export const fetchCustomers = async (query: string = ""): Promise<Customer[]> => {
+  const { data } = await axiosClient.get<Customer[]>("/customers/search", {
+    params: { query },
+  });
   return data;
 };
 

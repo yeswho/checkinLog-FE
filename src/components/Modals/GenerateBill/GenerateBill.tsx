@@ -31,11 +31,15 @@ type Booking = {
 interface GenerateBillModalProps {
     isOpen: boolean;
     onClose: () => void;
-    booking: Booking | null;
+    bookingProp: any;
 }
 
-export default function GenerateBill({ isOpen, onClose, booking }: GenerateBillModalProps) {
+export default function GenerateBill({ isOpen, onClose, bookingProp }: GenerateBillModalProps) {
     const generateBill = useGenerateBill();
+    var booking: Booking | null = null;
+    if (bookingProp && bookingProp.data) {
+        booking = bookingProp.data;
+    }
 
     const [formData, setFormData] = React.useState<GenerateBillDto>({
         bookingId: booking?.id || 0,

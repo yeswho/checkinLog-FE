@@ -11,10 +11,36 @@ import {
 } from '../types/booking';
 
 // Get all bookings
-export const getBookings = async (): Promise<Booking[]> => {
-  const { data } = await axiosClient.get<Booking[]>('/bookings');
+export const getBookings = async (page: number = 1, limit: number = 10): Promise<{ data: Booking[]; pagination: any }> => {
+  const { data } = await axiosClient.get<{ data: Booking[]; pagination: any }>('/bookings', {
+    params: { page, limit },
+  });
   return data;
 };
+
+export const searchBookings = async (
+  query: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<{ data: any[]; total: number }> => {
+  try {
+    const { data } = await axiosClient.get<{ data: any[]; total: number }>('/bookings/search', {
+      params: { query, page, limit },
+    });
+
+    // Ensure a consistent response structure
+    return {
+      data: Array.isArray(data?.data) ? data.data : [], // Default to empty array if undefined
+      total: typeof data?.total === 'number' ? data.total : 0, // Default to 0 if undefined
+    };
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return { data: [], total: 0 };
+    }
+    throw error;
+  }
+};
+
 
 // Get a single booking by ID
 export const getBooking = async (id: number): Promise<Booking> => {

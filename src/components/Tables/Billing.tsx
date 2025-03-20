@@ -24,8 +24,10 @@ import { ChevronDownIcon } from "./ChevronDownIcon";
 import { SearchIcon } from "./SearchIcon";
 import { capitalize } from "./utils";
 import { useGenerateBillPDF } from "../../hooks/useBilling";
+import EmailModal from "../Modals/EmailModal/EmailModal";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
-import PrintableBillComponent from "../Print/PrintableBill"
+import PrintableBillComponent from "../Print/PrintableBill";
+import { formatDate } from "../../utils/common";
 
 const INITIAL_VISIBLE_COLUMNS = ["customer", "booking", "rooms", "charges", "billing", "actions"];
 
@@ -44,6 +46,7 @@ export default function BillingsTable() {
     const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
     const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
     const [rowsPerPage, setRowsPerPage] = React.useState(20);
+    const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
     const [page, setPage] = React.useState(1);
 
     const [selectedBill, setSelectedBill] = React.useState<PrintableBill | null>(null);
@@ -62,12 +65,23 @@ export default function BillingsTable() {
             return;
         }
 
+        setSelectedBill(bill);
+        setIsEmailModalOpen(true);
+    };
+
+    const handleSendEmail = async (emailData: { to: string; subject: string; text: string }) => {
+        if (!printRef.current || !selectedBill) return;
+
+        const firstName = selectedBill.customer.name.split(" ")[0];
         generatePDF({
             element: printRef.current,
-            fileName: `bill_${bill.customer.name}.pdf`,
-            bill,
+            fileName: `bill_${firstName}.pdf`,
+            bill: selectedBill,
+            emailData,
         });
     };
+
+
 
     const hasSearchFilter = Boolean(filterValue);
 
@@ -122,8 +136,8 @@ export default function BillingsTable() {
             case "booking":
                 return (
                     <div className="flex flex-col">
-                        <p className="text-bold text-small">Check-In: {bill.booking.checkIn}</p>
-                        <p className="text-bold text-small">Check-Out: {bill.booking.checkOut}</p>
+                        <p className="text-bold text-small">Check-In: {formatDate(bill.booking.checkIn)}</p>
+                        <p className="text-bold text-small">Check-Out: {formatDate(bill.booking.checkOut)}</p>
                         <p className="text-bold text-small">Duration: {bill.booking.duration}</p>
                     </div>
                 );
@@ -181,10 +195,10 @@ export default function BillingsTable() {
                                     onClick={() => {
                                         setSelectedBill(bill);
                                         setTimeout(() => handleGeneratePDF(bill), 100)
-                                       
+
                                     }}
                                 >
-                                    {isPending ? "Generating and sending PDF..." : "Generate and Send PDF"}
+                                   Send Bill As Email
                                 </DropdownItem>
                                 <DropdownItem className="text-danger" color="danger">
                                     Delete Bill
@@ -361,6 +375,16 @@ export default function BillingsTable() {
                     </div>
                 )}
             </div>
+            {selectedBill &&
+                <EmailModal
+                isOpen={isEmailModalOpen}
+                onClose={() => setIsEmailModalOpen(false)}
+                onSubmit={handleSendEmail}
+                initialTo={selectedBill.customer.email || ""}
+                initialSubject="Your Bill Has Been Generated"
+                initialText="Please find your bill attached." 
+                bill={selectedBill}                />
+            }
         </div>
     );
 }

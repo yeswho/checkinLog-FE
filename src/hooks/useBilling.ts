@@ -80,15 +80,28 @@ export const useGenerateBillPDF = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { element: HTMLElement; fileName: string; bill: PrintableBill }) => generatePDF(data.element, data.fileName, data.bill),
+    mutationFn: async (data: {
+      element: HTMLElement;
+      fileName: string;
+      bill: PrintableBill;
+      emailData: { to: string; subject: string; text: string };
+    }) => {
+      return await toast.promise(
+        generatePDF(data.element, data.fileName, data.emailData),
+        {
+          loading: "Generating PDF and sending email...",
+          success: "Bill PDF generated and email sent successfully",
+          error: "Failed to generate and send bill PDF",
+        }
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["billings"] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
-
-      toast.success("Bill PDF generated and email sent successfully");
     },
     onError: (error) => {
       toast.error(error?.message || "Failed to generate and send bill PDF");
     },
   });
 };
+

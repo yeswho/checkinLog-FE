@@ -6,10 +6,10 @@ export function capitalize(str) {
   }
   
 
-  export const generatePDF = async (element, fileName, bill) => {
+  export const generatePDF = async (element, fileName, emailData) => {
     try {
-      // Step 1: Generate PDF
-      const pdfData = await new Promise((resolve, reject) => {
+      // Step 1: Generate PDF as Blob
+      const pdfBlob = await new Promise((resolve, reject) => {
         const options = {
           margin: 10,
           filename: fileName,
@@ -24,24 +24,23 @@ export function capitalize(str) {
           .toPdf()
           .get("pdf")
           .then((pdf) => {
-            const pdfBlob = pdf.output("blob");
-            const reader = new FileReader();
-            reader.readAsDataURL(pdfBlob);
-            reader.onloadend = () => {
-              resolve(reader.result);
-            };
+            resolve(pdf.output("blob"));
           })
           .catch((error) => {
             reject(error);
           });
       });
   
-      // Step 2: Send Email with PDF Attachment
-      const response = await axiosClient.post("/send-email", {
-        to: bill.customer.email,
-        subject: "Your Bill from Hotel JanakpurInn",
-        text: "Please find your bill attached.",
-        pdfData,
+      // Step 2: Prepare FormData
+      const formData = new FormData();
+      formData.append("to", emailData.to);
+      formData.append("subject", emailData.subject);
+      formData.append("text", emailData.text);
+      formData.append("pdfFile", pdfBlob, fileName);
+  
+      // Step 3: Send Email with PDF Attachment
+      const response = await axiosClient.post("/billings/email", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
   
       return response.data;
@@ -49,3 +48,4 @@ export function capitalize(str) {
       throw error;
     }
   };
+  

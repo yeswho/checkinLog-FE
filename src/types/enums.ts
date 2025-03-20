@@ -4,6 +4,11 @@ export enum GENDER {
     OTHER = 'Other'
 }
 
+export enum ROLES {
+    ADMIN = 'admin',
+    STANDARD = 'standard'
+}
+
 export enum ROOM_TYPE {
     SINGLE = 'Single',
     DOUBLE = 'Double',

@@ -6,8 +6,18 @@ export const useLogin = () => {
     mutationFn: login,
     onSuccess: (data) => {
       if (data.data.accessToken) {
+        // Store the access token and role in localStorage
         localStorage.setItem("HMS-TOKEN", data.data.accessToken);
-        window.location.href = "/";
+        localStorage.setItem("HMS-ROLE", data.data.user.role);
+        localStorage.setItem("HMS-USER", data.data.user.id)
+
+        // Redirect based on role
+        const role = data.data.user.role;
+        if (role === "admin") {
+          window.location.href = "/";
+        } else {
+          window.location.href = "/";
+        }
       }
     },
     onError: (error: any) => {

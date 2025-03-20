@@ -1,5 +1,7 @@
 import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import {
+  Autocomplete,
+  AutocompleteItem,
   Button,
   Chip,
   DatePicker,
@@ -14,9 +16,10 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import { useCreateBooking } from "hooks/useBooking";
-import { useCustomers } from "hooks/useCustomer";
+import { useCustomersSearch } from "hooks/useCustomer";
 import { useRooms } from "hooks/useRooms";
-import React, { useEffect } from "react";
+import React, { Key, useEffect, useState } from "react";
+import { useDebounce } from "use-debounce";
 import { BOOKING_STATUS, PAYMENT_MODE } from "../../../types/enums";
 import { PlusIcon } from "../../Tables/PlusIcon";
 import AddCustomer from "../AddCustomer/AddCustomer";
@@ -39,11 +42,9 @@ const BookingStatusOptions = [
   { value: "Booked", label: "Booked" },
 ];
 
-
 export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean; onClose: () => void; room: any }) {
-  const [formData, setFormData] = React.useState({
+  const [formData, setFormData] = useState({
     customer: "",
-    customerLabel: "",
     room_ids: [] as string[],
     checkIn: null as CalendarDate | null,
     checkOut: null as CalendarDate | null,
@@ -54,50 +55,61 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
 
   const createBooking = useCreateBooking();
 
-  const [selectedRooms, setSelectedRooms] = React.useState<Array<{ id: number; label: string }>>([]);
+  const [selectedRooms, setSelectedRooms] = useState<Array<{ id: number; label: string }>>([]);
   const { isOpen: isCustomerOpen, onOpen: onCustomerOpen, onClose: onCustomerClose } = useDisclosure();
 
-  // Fetch customers and rooms using hooks
-  const { data: customers = [], isLoading: isCustomersLoading } = useCustomers();
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery] = useDebounce(searchQuery, 500);
+
+  // Fetch customers based on the debounced search query
+  const { data: customers = [], isLoading: isCustomersLoading } = useCustomersSearch(debouncedQuery);
+
+  // Format customers for Autocomplete
+  const formattedCustomers = customers.map(customer => ({
+    key: customer.id.toString(),
+    label: `${customer.firstname} ${customer.lastname} (${customer.email})`,
+    value: customer.id.toString()
+  }));
+
+  // Fetch rooms
   const { data: rooms = [], isLoading: isRoomsLoading } = useRooms();
 
-useEffect(() => {
-  if (room?.id && isOpen) {
-    setSelectedRooms([{
-      id: room.id,
-      label: room?.name || `Room ${room?.id}`  // Use room.name with a fallback
-    }]);
-    setFormData(prev => ({
-      ...prev,
-      room_ids: [room.id.toString()]
-    }));
-  }
-}, [room, isOpen]);
-
-  const handleChange = (name: string, value: any) => {
-    if (name === "customer") {
-      const customer = customers.find(c => c.id.toString() === value);
-      if (customer) {
-        setFormData(prev => ({
-          ...prev,
-          customer: value
-        }));
-      }
-    }
-    else {
+  useEffect(() => {
+    if (room?.id && isOpen) {
+      setSelectedRooms([{
+        id: room.id,
+        label: room?.name || `Room ${room?.id}`
+      }]);
       setFormData(prev => ({
         ...prev,
-        [name]: value
+        room_ids: [room.id.toString()]
       }));
     }
+  }, [room, isOpen]);
+
+  const handleCustomerSelect = (key: Key | null) => {
+      if (key) {
+        setFormData(prev => ({
+          ...prev,
+          customer: key.toString()
+        }));
+      }
+    };
+
+  const handleChange = (name: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleRoomSelect = (roomId: string) => {
     const room = rooms.find(r => r.id.toString() === roomId);
     if (room && !selectedRooms.find(r => r.id.toString() === roomId)) {
-      setSelectedRooms([...selectedRooms, { 
-        id: room.id, 
-        label: room?.name || `Room ${room.id}` 
+      setSelectedRooms([...selectedRooms, {
+        id: room.id,
+        label: room?.name || `Room ${room.id}`
       }]);
       setFormData(prev => ({
         ...prev,
@@ -115,7 +127,6 @@ useEffect(() => {
   };
 
   const handleSubmit = () => {
-
     const payload = {
       customer_id: parseInt(formData.customer),
       room_id: formData.room_ids.map(id => parseInt(id)),
@@ -124,23 +135,17 @@ useEffect(() => {
       pax: parseInt(formData.numberOfGuests),
       payment_mode: formData.paymentMode,
       status: formData.status,
-    }
+    };
 
     console.log("New booking payload:", payload);
-    
-    createBooking.mutate(payload);
 
+    createBooking.mutate(payload);
     onClose();
   };
 
   return (
     <div>
-      <Modal
-        backdrop={"blur"}
-        isOpen={isOpen}
-        onClose={onClose}
-        size="2xl"
-      >
+      <Modal backdrop={"blur"} isOpen={isOpen} onClose={onClose} size="2xl">
         <ModalContent>
           {(onClose) => (
             <>
@@ -148,21 +153,22 @@ useEffect(() => {
               <ModalBody>
                 <div className="flex flex-col gap-4">
                   <div className="flex gap-2 items-end">
-                    <Select
+                    <Autocomplete
                       isRequired
-                      autoFocus
                       label="Customer"
-                      placeholder="Select customer"
-                      variant="bordered"
-                      onChange={(e) => handleChange("customer", e.target.value)}
+                      placeholder="Search customer name or email"
+                      className="flex-1"
+                      defaultItems={formattedCustomers}
+                      onSelectionChange={(key) => handleCustomerSelect(key)}
+                      onInputChange={setSearchQuery}
                       isLoading={isCustomersLoading}
                     >
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer?.firstname + " " + customer?.lastname}
-                        </SelectItem>
-                      ))}
-                    </Select>
+                      {(item) => (
+                        <AutocompleteItem key={item.key} value={item.value}>
+                          {item.label}
+                        </AutocompleteItem>
+                      )}
+                    </Autocomplete>
                     <Button
                       isIconOnly
                       size="sm"
@@ -173,6 +179,7 @@ useEffect(() => {
                       <PlusIcon size={18} width={undefined} height={undefined} />
                     </Button>
                   </div>
+
                   <div className="flex flex-col gap-2">
                     <Select
                       isRequired
@@ -217,7 +224,7 @@ useEffect(() => {
                     isRequired
                     label="Check-Out Date"
                     className="w-full rounded-lg"
-                    minValue={formData.checkIn?.add({ days: 1 }) || today(getLocalTimeZone())}
+                    minValue={formData.checkIn?.add({days:1}) || today(getLocalTimeZone())}
                     value={formData.checkOut}
                     onChange={(date) => handleChange("checkOut", date)}
                   />

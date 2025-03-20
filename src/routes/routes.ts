@@ -12,5 +12,6 @@ export const routes = {
     FLOOR: '/floor',
     COMPLAINT: '/complaint',
     MAINTENANCE: '/maintenance',
-    LOGIN: '/login'
+    LOGIN: '/login',
+    PROFILE: '/profile'
 }

@@ -1,4 +1,4 @@
-import { GENDER, PAYMENT_MODE, ROOM_TYPE } from "./enums";
+import { GENDER, PAYMENT_MODE, ROOM_TYPE, ROLES } from "./enums";
 
 export interface Room {
     id: number;
@@ -6,6 +6,14 @@ export interface Room {
     roomType: string;
     rate: number;
     status: ROOM_TYPE;
+  }
+
+  export interface User {
+    email: string;
+    username: string;
+    password: string;
+    address: string;
+    role: ROLES;
   }
 
   export interface RoomType {

@@ -48,10 +48,15 @@ type Booking = {
 interface DeleteBookingProps {
     isOpen: boolean;
     onClose: () => void;
-    booking: Booking | null;
+    bookingProp: any;
 }
 
-export default function DeleteBooking({ isOpen, onClose, booking }: DeleteBookingProps) {
+export default function DeleteBooking({ isOpen, onClose, bookingProp }: DeleteBookingProps) {
+
+    var booking: Booking | null = null;
+    if (bookingProp && bookingProp.data) {
+        booking = bookingProp.data;
+    }
     const { mutate: deleteBooking } = useDeleteBooking();
     const handleSubmit = () => {
         if (!booking) return;

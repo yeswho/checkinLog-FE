@@ -6,8 +6,14 @@ interface LoginPayload {
 }
 
 interface LoginResponse {
-  data: any;
-  token: string;
+  data: {
+    accessToken: string;
+    user: {
+      id: string;
+      email: string;
+      role: "admin" | "standard";
+    };
+  };
 }
 
 export const login = async (data: LoginPayload): Promise<LoginResponse> => {

@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Button,
   Chip,
@@ -18,13 +19,12 @@ import {
   useDisclosure,
   User,
 } from "@nextui-org/react";
-import React from "react";
-import { useBookings } from "../../hooks/useBooking";
+import { useBookingsSearch } from "../../hooks/useBooking";
 import { formatDate } from "../../utils/common";
 import AddBooking from "../Modals/AddBooking/AddBooking";
 import DeleteBooking from "../Modals/DeleteBooking/DeleteBooking";
 import UpdateBooking from "../Modals/UpdateBooking/UpdateBooking";
-import GenerateBill from "../Modals/GenerateBill/GenerateBill"
+import GenerateBill from "../Modals/GenerateBill/GenerateBill";
 import { columns } from "./bookingData";
 import { ChevronDownIcon } from "./ChevronDownIcon";
 import { PlusIcon } from "./PlusIcon";
@@ -54,12 +54,13 @@ enum BOOKING_STATUS {
 }
 
 export default function BookingsTable() {
-  const [filterValue, setFilterValue] = React.useState("");
+  const [searchQuery, setSearchQuery] = React.useState(""); // Stores the input value
+  const [activeQuery, setActiveQuery] = React.useState(""); // Stores the query sent to the backend
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
     new Set(INITIAL_VISIBLE_COLUMNS)
   );
-  const [rowsPerPage, setRowsPerPage] = React.useState(20);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [page, setPage] = React.useState(1);
   const [selectedBooking, setSelectedBooking] = React.useState(null);
 
@@ -73,65 +74,20 @@ export default function BookingsTable() {
     direction: "ascending",
   });
 
-  // Use the useBookings hook to fetch bookings data
-  const { data: bookings = [], isLoading, isError } = useBookings();
+  // Use the useBookingsSearch hook to fetch bookings data
+  const { data: bookingsData = { data: [], total: 0 }, isLoading, isError } = useBookingsSearch(activeQuery, page, rowsPerPage);
+  const { data: bookings = [], total } = bookingsData;
 
-  const hasSearchFilter = Boolean(filterValue);
+  console.log("Bookings Data:", bookingsData);
+  console.log("Bookings:", bookings);
+  console.log("Total:", total);
+
+  const hasSearchFilter = Boolean(activeQuery);
 
   const headerColumns = React.useMemo(() => {
     if (visibleColumns === "all") return columns;
     return columns.filter((column) => Array.from(visibleColumns).includes(column.uid));
   }, [visibleColumns]);
-
-  const filteredItems = React.useMemo(() => {
-    let filteredBookings = [...bookings];
-
-    if (hasSearchFilter) {
-      filteredBookings = filteredBookings.filter(
-        (booking) =>
-          booking.customer.firstname.toLowerCase().includes(filterValue.toLowerCase())
-      );
-    }
-
-    // Add sorting logic
-    return filteredBookings.sort((a, b) => {
-      let first = a[sortDescriptor.column as keyof typeof a];
-      let second = b[sortDescriptor.column as keyof typeof b];
-
-      // Handle nested objects (customer, room)
-      if (sortDescriptor.column === "customer") {
-        first = a.customer;
-        second = b.customer;
-      } else if (sortDescriptor.column === "room") {
-        first = a.room;
-        second = b.room;
-      }
-
-      // Handle dates
-      if (
-        sortDescriptor.column === "checkIn" ||
-        sortDescriptor.column === "checkOut" ||
-        sortDescriptor.column === "createdAt" ||
-        sortDescriptor.column === "updatedAt"
-      ) {
-        first = new Date(first as string).getTime();
-        second = new Date(second as string).getTime();
-      }
-
-      const cmp = first < second ? -1 : first > second ? 1 : 0;
-
-      return sortDescriptor.direction === "descending" ? -cmp : cmp;
-    });
-  }, [bookings, filterValue, sortDescriptor]);
-
-  const pages = Math.ceil(filteredItems.length / rowsPerPage);
-
-  const items = React.useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-
-    return filteredItems.slice(start, end);
-  }, [page, filteredItems, rowsPerPage]);
 
   const renderCell = React.useCallback((booking: any, columnKey: React.Key) => {
     switch (columnKey) {
@@ -150,11 +106,9 @@ export default function BookingsTable() {
       case "room":
         return (
           <div>
-            <p className="text-bold">
-              {booking.rooms.map((room: any) => room.name).join(" + ")}
-            </p>
+            <p className="text-bold">{booking.room.name}</p>
             <p className="text-tiny text-default-500">
-              {booking.rooms.map((room: any) => `${room.floor.name} - ${room.roomType.name}`).join(" + ")}
+              {`${booking.room.floor} - ${booking.room.type}`}
             </p>
           </div>
         );
@@ -238,33 +192,54 @@ export default function BookingsTable() {
   }, []);
 
   const onSearchChange = React.useCallback((value?: string) => {
-    if (value) {
-      setFilterValue(value);
-      setPage(1);
-    } else {
-      setFilterValue("");
-    }
+    setSearchQuery(value || ""); // Update the search input value
   }, []);
 
+  const handleSearch = () => {
+    setActiveQuery(searchQuery); // Set the active query when the search button is clicked
+    setPage(1); // Reset to the first page when searching
+  };
+
   const topContent = React.useMemo(() => {
+    // Add a handler for the Enter key
+    const handleKeyPress = (e: { key: string; }) => {
+      if (e.key === "Enter") {
+        handleSearch();
+      }
+    };
+  
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex justify-between gap-3 items-end">
-          <Input
-            isClearable
-            classNames={{
-              base: "w-full sm:max-w-[44%]",
-              inputWrapper: "border-1",
-            }}
-            placeholder="Search by customer or room..."
-            size="sm"
-            startContent={<SearchIcon className="text-default-300" />}
-            value={filterValue}
-            variant="bordered"
-            onClear={() => setFilterValue("")}
-            onValueChange={onSearchChange}
-          />
-          <div className="flex gap-3">
+        <div className="flex items-end gap-2">
+          <div className="flex w-full sm:max-w-[60%]">
+            <Input
+              isClearable
+              classNames={{
+                base: "w-full",
+                inputWrapper: "border-1 rounded-r-none",
+              }}
+              placeholder="Search by customer..."
+              size="sm"
+              startContent={<SearchIcon className="text-default-300" />}
+              value={searchQuery}
+              variant="bordered"
+              onClear={() => {
+                setSearchQuery("");
+                setActiveQuery("");
+              }}
+              onValueChange={onSearchChange}
+              onKeyPress={handleKeyPress}
+            />
+            <Button
+              size="sm"
+              className="rounded-l-none bg-foreground text-background"
+              onPress={handleSearch} 
+            >
+              Search
+            </Button>
+          </div>
+          
+          <div className="flex gap-3 ml-auto">
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
                 <Button endContent={<ChevronDownIcon className="text-small" />} size="sm" variant="flat">
@@ -297,12 +272,13 @@ export default function BookingsTable() {
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {bookings.length} bookings</span>
+          <span className="text-default-400 text-small">Total {total || 0} bookings</span>
           <label className="flex items-center text-default-400 text-small">
             Rows per page:
             <select
               className="bg-transparent outline-none text-default-400 text-small"
               onChange={onRowsPerPageChange}
+              value={rowsPerPage}
             >
               <option value="10">10</option>
               <option value="20">20</option>
@@ -312,7 +288,7 @@ export default function BookingsTable() {
         </div>
       </div>
     );
-  }, [filterValue, visibleColumns, onSearchChange, onRowsPerPageChange, bookings.length]);
+  }, [searchQuery, visibleColumns, onSearchChange, onRowsPerPageChange, total, rowsPerPage, handleSearch]);
 
   const bottomContent = React.useMemo(() => {
     return (
@@ -325,28 +301,31 @@ export default function BookingsTable() {
           color="default"
           isDisabled={hasSearchFilter}
           page={page}
-          total={pages}
+          total={Math.ceil((total ?? 0) / rowsPerPage) || 1}
           variant="light"
           onChange={setPage}
         />
         <span className="text-small text-default-400">
           {selectedKeys === "all"
             ? "All items selected"
-            : `${selectedKeys.size} of ${items.length} selected`}
+            : `${selectedKeys.size} of ${bookings.length} selected`}
         </span>
       </div>
     );
-  }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+  }, [selectedKeys, bookings.length, page, total, rowsPerPage, hasSearchFilter]);
 
-  if (isLoading) return <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
-    <Spinner
-      classNames={{
-        base: "scale-150",
-        label: "text-foreground mt-4",
-      }}
-      color="primary"
-    />
-  </div>;
+  if (isLoading) return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+      <Spinner
+        classNames={{
+          base: "scale-150",
+          label: "text-foreground mt-4",
+        }}
+        color="primary"
+      />
+    </div>
+  );
+
   if (isError) return <div>Error fetching bookings</div>;
 
   return (
@@ -380,7 +359,7 @@ export default function BookingsTable() {
             </TableColumn>
           )}
         </TableHeader>
-        <TableBody emptyContent={"No bookings found"} items={items}>
+        <TableBody emptyContent={"No bookings found"} items={bookings}>
           {(item) => (
             <TableRow key={item.id}>
               {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
@@ -391,12 +370,11 @@ export default function BookingsTable() {
 
       <AddBooking isOpen={isBookingOpen} onClose={onBookingClose} room={undefined} />
 
-      <UpdateBooking isOpen={isBookingUpdateOpen} onClose={onBookingUpdateClose} booking={selectedBooking} />
+      <UpdateBooking isOpen={isBookingUpdateOpen} onClose={onBookingUpdateClose} bookingProp={selectedBooking} />
 
-      <DeleteBooking isOpen={isDeleteOpen} onClose={onDeleteClose} booking={selectedBooking} />
+      <DeleteBooking isOpen={isDeleteOpen} onClose={onDeleteClose} bookingProp={selectedBooking} />
 
-      <GenerateBill isOpen={isGenerateBillOpen} onClose={onGenerateBillClose} booking={selectedBooking} />
+      <GenerateBill isOpen={isGenerateBillOpen} onClose={onGenerateBillClose} bookingProp={selectedBooking} />
     </div>
-
   );
 }

@@ -56,13 +56,11 @@ export default function CustomersTable() {
   const { isOpen: isBookingOpen, onOpen: onBookingOpen, onClose: onBookingClose } = useDisclosure();
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
     column: "id",
-    direction: "ascending",
+    direction: "descending",
   });
   const [page, setPage] = React.useState(1);
 
-  const customerData = useCustomers();
-  const customers = customerData?.data || [];
-  const pages = Math.ceil(customers.length / rowsPerPage);
+  const { data: { data: customers = [], pagination } = {}, isLoading, isError } = useCustomers(page, rowsPerPage);
 
   const hasSearchFilter = Boolean(filterValue);
   const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null);
@@ -71,40 +69,6 @@ export default function CustomersTable() {
     if (visibleColumns === "all") return columns;
     return columns.filter((column) => Array.from(visibleColumns).includes(column.uid));
   }, [visibleColumns]);
-
-  const filteredItems = React.useMemo(() => {
-    let filteredCustomers = [...customers];
-
-    if (hasSearchFilter) {
-      filteredCustomers = filteredCustomers.filter((customer) =>
-        customer.firstname.toLowerCase().includes(filterValue.toLowerCase())
-      );
-    }
-    if (genderFilter !== "all" && Array.from(genderFilter).length !== genderOptions.length) {
-      filteredCustomers = filteredCustomers.filter((customer) =>
-        Array.from(genderFilter).includes(customer.gender)
-      );
-    }
-
-    return filteredCustomers;
-  }, [customers, filterValue, genderFilter]);
-
-  const items = React.useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-
-    return filteredItems.slice(start, end);
-  }, [page, filteredItems, rowsPerPage]);
-
-  const sortedItems = React.useMemo(() => {
-    return [...items].sort((a: Customer, b: Customer) => {
-      const first = a[sortDescriptor.column as keyof Customer] as number;
-      const second = b[sortDescriptor.column as keyof Customer] as number;
-      const cmp = first < second ? -1 : first > second ? 1 : 0;
-
-      return sortDescriptor.direction === "descending" ? -cmp : cmp;
-    });
-  }, [sortDescriptor, items]);
 
   const renderCell = React.useCallback((customer: Customer, columnKey: React.Key) => {
     const cellValue = customer[columnKey as keyof Customer];
@@ -303,18 +267,18 @@ export default function CustomersTable() {
           color="default"
           isDisabled={hasSearchFilter}
           page={page}
-          total={pages}
+          total={pagination?.totalPages || 1}
           variant="light"
           onChange={setPage}
         />
         <span className="text-small text-default-400">
           {selectedKeys === "all"
             ? "All items selected"
-            : `${selectedKeys.size} of ${items.length} selected`}
+            : `${selectedKeys.size} of ${customers.length} selected`}
         </span>
       </div>
     );
-  }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+  }, [selectedKeys, customers.length, page, pagination?.totalPages, hasSearchFilter]);
 
   const classNames = React.useMemo(
     () => ({
@@ -364,7 +328,7 @@ export default function CustomersTable() {
             </TableColumn>
           )}
         </TableHeader>
-        <TableBody emptyContent={"No users found"} items={sortedItems}>
+        <TableBody emptyContent={"No users found"} items={customers}>
           {(item) => (
             <TableRow key={item.id}>
               {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
