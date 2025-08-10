@@ -14,6 +14,7 @@ export interface Booking {
   status: ROOM_STATUS;
   rate: number;
   pax: number;
+  requested_roomType: string[];
   payment_mode: PAYMENT_MODE;
   createdAt: Date;
   updatedAt: Date;
@@ -113,3 +114,33 @@ export interface GenerateBillDto {
   remarks?: string;
 }
 
+export interface AdditionalCharge {
+  id: number;
+  booking_id: number;
+  description: string;
+  amount: number;
+  isFood: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddAdditionalChargeProps {
+  bookingId: number;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export interface UpdateAdditionalChargeProps {
+  bookingId: number;
+  charge: AdditionalCharge;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+
+export interface DeleteAdditionalChargeProps {
+  bookingId: number;
+  chargeId: number;
+  isOpen: boolean;
+  onClose: () => void;
+}

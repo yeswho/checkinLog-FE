@@ -1,19 +1,18 @@
-import React from "react";
-import { today, getLocalTimeZone, CalendarDate } from "@internationalized/date";
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date";
 import {
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
     Button,
+    DatePicker,
     Input,
+    Modal,
+    ModalBody,
+    ModalContent,
+    ModalFooter,
+    ModalHeader,
     Select,
     SelectItem,
-    DatePicker,
 } from "@nextui-org/react";
 import { useUpdateCustomer } from "hooks/useCustomer";
-import { toast } from "sonner";
+import React from "react";
 
 type GENDER = "MALE" | "FEMALE" | "OTHER";
 

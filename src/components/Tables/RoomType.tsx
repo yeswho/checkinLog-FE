@@ -26,6 +26,7 @@ import { SearchIcon } from "./SearchIcon";
 import { capitalize } from "./utils";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
 import AddRoomType from "../Modals/AddRoomType/AddRoomType";
+import DeleteRoomType from "../Modals/DeleteRoomType/DeleteRoomType";
 import { Spinner } from "@heroui/react";
 
 const INITIAL_VISIBLE_COLUMNS = ["name", "bed", "ac", "bathroom", "actions"];
@@ -35,7 +36,7 @@ export default function RoomTypesTable() {
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [rowsPerPage, setRowsPerPage] = React.useState(15);
   const [page, setPage] = React.useState(1);
   const [selectedRoomType, setSelectedRoomType] = React.useState(null);
 
@@ -56,7 +57,7 @@ export default function RoomTypesTable() {
   }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
-    let filteredRoomTypes = roomTypes || []; // Use fetched room types data
+    let filteredRoomTypes = roomTypes || []; 
 
     if (hasSearchFilter) {
       filteredRoomTypes = filteredRoomTypes.filter((type) =>
@@ -231,9 +232,9 @@ export default function RoomTypesTable() {
               className="bg-transparent outline-none text-default-400 text-small"
               onChange={onRowsPerPageChange}
             >
-              <option value="5">5</option>
-              <option value="10">10</option>
               <option value="15">15</option>
+              <option value="20">20</option>
+              <option value="25">25</option>
             </select>
           </label>
         </div>
@@ -317,6 +318,7 @@ export default function RoomTypesTable() {
         </TableBody>
       </Table>
       <AddRoomType isOpen={isAddOpen} onClose={onAddClose} />
+      <DeleteRoomType isOpen={isDeleteOpen} onClose={onDeleteClose} roomType={selectedRoomType} />
     </div>
   );
 }

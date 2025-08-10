@@ -29,8 +29,18 @@ export interface Billing {
       rate: number;
       total: number;
     }[];
+    foodCharges: {
+      description: string;
+      amount: number;
+    }[];
+    otherCharges: {
+      description: string;
+      amount: number;
+    }[];
     charges: {
       totalRoomCharges: string;
+      totalFoodCharges: string;
+      totalOtherCharges: string;
       tax: string;
       vat: string;
       serviceCharge: string;

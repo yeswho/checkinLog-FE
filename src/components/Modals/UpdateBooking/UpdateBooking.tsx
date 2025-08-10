@@ -47,15 +47,11 @@ type Booking = {
 interface UpdateBookingProps {
     isOpen: boolean;
     onClose: () => void;
-    bookingProp: any;
+    booking: Booking | null;
 }
 
-export default function UpdateBooking({ isOpen, onClose, bookingProp }: UpdateBookingProps) {
-    console.log("Booking Data:", bookingProp);
-    var booking: Booking | null = null;
-    if (bookingProp && bookingProp.data) {
-        booking = bookingProp.data;
-    }
+export default function UpdateBooking({ isOpen, onClose, booking }: UpdateBookingProps) {
+    console.log("Booking Data:", booking);
     const updateBooking = useUpdateBooking();
 
     const [formData, setFormData] = React.useState({

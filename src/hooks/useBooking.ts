@@ -11,8 +11,10 @@ import {
     getBookingsInDateRange,
     getTopCustomersWithHighestBookings,
     searchBookings,
+    sendBookingConfirmation,
     updateBooking,
     updateBookingRate,
+    updateBookingRooms,
 } from '../api/booking';
 
 
@@ -172,4 +174,36 @@ export const useGenerateBill = () => {
             toast.error(error.response?.data?.message || 'Failed to generate booking bill');
         },
     });
+};
+
+// Add to your booking hooks file (hooks/useBooking.ts)
+export const useUpdateBookingRooms = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ bookingId, roomIds }: { bookingId: number; roomIds: number[] }) =>
+      updateBookingRooms(bookingId, roomIds),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking', variables.bookingId] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      toast.success('Rooms assigned successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to assign rooms');
+    },
+  });
+};
+
+export const useSendBookingConfirmation = () => {
+  return useMutation({
+    mutationFn: ({ bookingId, recipient }: { bookingId: number; recipient?: 'admin' | 'guest' | 'both' }) =>
+      sendBookingConfirmation(bookingId, recipient),
+    onSuccess: () => {
+      toast.success('Confirmation email sent successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to send confirmation email');
+    },
+  });
 };

@@ -6,6 +6,16 @@ export const getRooms = async () => {
   return data;
 };
 
+export const getAvailableRooms = async (params?: { checkIn?: string; checkOut?: string }) => {
+  const { data } = await axiosClient.get<Room[]>('/rooms/available', {
+    params: {
+      checkIn: params?.checkIn,
+      checkOut: params?.checkOut
+    }
+  });
+  return data;
+};
+
 export const getRoom = async (id: number) => {
   const { data } = await axiosClient.get<Room>(`/rooms/${id}`);
   return data;

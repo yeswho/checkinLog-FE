@@ -55,7 +55,7 @@ const RoomOccupancyHeatmap: React.FC = () => {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   return (
-                    <div className="bg-white p-4 rounded-lg shadow-lg">
+                    <div className="bg-default p-4 rounded-lg shadow-lg">
                       <p>Room Type: {data.roomType}</p>
                       <p>Day: {data.day}</p>
                       <p>Occupancy: {data.occupancy}%</p>

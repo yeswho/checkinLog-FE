@@ -159,6 +159,8 @@ export default function BillingsTable() {
                 return (
                     <div className="flex flex-col">
                         <p className="text-bold text-small">Room Charges: रु. {bill.charges.totalRoomCharges}</p>
+                        <p className="text-bold text-small">Food Charges: रु. {bill.charges.totalFoodCharges}</p>
+                        <p className="text-bold text-small">Other Charges: रु. {bill.charges.totalOtherCharges}</p>
                         <p className="text-bold text-small">Tax: रु. {bill.charges.tax}</p>
                         <p className="text-bold text-small">VAT: रु. {bill.charges.vat}</p>
                         <p className="text-bold text-small">Service Charge: रु. {bill.charges.serviceCharge}</p>
@@ -195,7 +197,6 @@ export default function BillingsTable() {
                                     onClick={() => {
                                         setSelectedBill(bill);
                                         setTimeout(() => handleGeneratePDF(bill), 100)
-
                                     }}
                                 >
                                    Send Bill As Email

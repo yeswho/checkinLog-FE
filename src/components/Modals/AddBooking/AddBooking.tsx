@@ -57,6 +57,8 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
 
   const [selectedRooms, setSelectedRooms] = useState<Array<{ id: number; label: string }>>([]);
   const { isOpen: isCustomerOpen, onOpen: onCustomerOpen, onClose: onCustomerClose } = useDisclosure();
+  const [selectedCustomerKey, setSelectedCustomerKey] = useState<Key | null>(null);
+
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,13 +91,15 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
   }, [room, isOpen]);
 
   const handleCustomerSelect = (key: Key | null) => {
-      if (key) {
-        setFormData(prev => ({
-          ...prev,
-          customer: key.toString()
-        }));
-      }
-    };
+
+    if (key) {
+      setSelectedCustomerKey(key);
+      setFormData(prev => ({
+        ...prev,
+        customer: key.toString()
+      }));
+    }
+  };
 
   const handleChange = (name: string, value: any) => {
     setFormData(prev => ({
@@ -159,8 +163,11 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
                       placeholder="Search customer name or email"
                       className="flex-1"
                       defaultItems={formattedCustomers}
-                      onSelectionChange={(key) => handleCustomerSelect(key)}
+                      selectedKey={formData.customer} // Use the form state directly
+                      onSelectionChange={handleCustomerSelect}
                       onInputChange={setSearchQuery}
+                      inputValue={formattedCustomers.find(c => c.key === formData.customer)?.label || ""} // Control the input value
+                      allowsCustomValue={false} // Prevent custom values
                       isLoading={isCustomersLoading}
                     >
                       {(item) => (
@@ -224,7 +231,7 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
                     isRequired
                     label="Check-Out Date"
                     className="w-full rounded-lg"
-                    minValue={formData.checkIn?.add({days:1}) || today(getLocalTimeZone())}
+                    minValue={formData.checkIn?.add({ days: 1 }) || today(getLocalTimeZone())}
                     value={formData.checkOut}
                     onChange={(date) => handleChange("checkOut", date)}
                   />

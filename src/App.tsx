@@ -10,6 +10,7 @@ import Dashboard from 'pages/Dashboard/Dashboard';
 import Complaint from 'pages/Complaint/Complaint';
 import Maintenance from 'pages/Maintenance/Maintenance';
 import Billings from 'pages/Billing/Billing'
+import Expense from 'pages/Expense/Expense';
 import Layout from './assets/Layout/Layout';
 import { ThemeProvider } from './assets/themeProvider';
 import './index.css';
@@ -19,6 +20,12 @@ import ProtectedRoute from './components/ProtectedRoutes';
 import { Spinner } from "@heroui/react";
 import { useEffect, useState } from "react";
 import ProfilePage from "pages/Profile/Profile";
+import Employee from "pages/Employee/Employee";
+import Salary from "pages/Salary/Salary";
+import Revenue from "pages/Revenue/Revenue";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
 
 
 function AnimatedRoutes() {
@@ -35,7 +42,6 @@ function AnimatedRoutes() {
 
   return (
     <>
-
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
           <Spinner 
@@ -49,7 +55,7 @@ function AnimatedRoutes() {
       )}
 
       <AnimatePresence mode="wait">
-        <motion.div
+        <motion.main
           key={location.pathname}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -57,31 +63,40 @@ function AnimatedRoutes() {
           transition={{ duration: 0.5 }}
         >
           <Routes location={location}>
-            <Route path={createRoute([routes.ROOMS])} element={<Layout><Room /></Layout>}/>
-            <Route path={createRoute([routes.HOME])} element={<Layout><Dashboard /></Layout>} />
-            <Route path={createRoute([routes.CUSTOMERS])} element={<Layout><Customer /></Layout>} />
-            <Route path={createRoute([routes.BOOKINGS])} element={<Layout><Bookings /></Layout>} />
-            <Route path={createRoute([routes.ROOM_TYPE])} element={<Layout><RoomType /></Layout>} />
-            <Route path={createRoute([routes.FLOOR])} element={<Layout><Floor /></Layout>} />
-            <Route path={createRoute([routes.COMPLAINT])} element={<Layout><Complaint /></Layout>} />
-            <Route path={createRoute([routes.MAINTENANCE])} element={<Layout><Maintenance /></Layout>} />
-            <Route path={createRoute([routes.BILLINGS])} element={<Layout><Billings/></Layout>} />
-            <Route path={createRoute([routes.PROFILE])} element={<Layout><ProfilePage/></Layout>} />
+            <Route path={createRoute([routes.ROOMS])} element={<Room />} />
+            <Route path={createRoute([routes.HOME])} element={<Dashboard />} />
+            <Route path={createRoute([routes.CUSTOMERS])} element={<Customer />} />
+            <Route path={createRoute([routes.BOOKINGS])} element={<Bookings />} />
+            <Route path={createRoute([routes.ROOM_TYPE])} element={<RoomType />} />
+            <Route path={createRoute([routes.FLOOR])} element={<Floor />} />
+            <Route path={createRoute([routes.COMPLAINT])} element={<Complaint />} />
+            <Route path={createRoute([routes.MAINTENANCE])} element={<Maintenance />} />
+            <Route path={createRoute([routes.BILLINGS])} element={<Billings />} />
+            <Route path={createRoute([routes.EMPLOYEE])} element={<Employee />} />
+            <Route path={createRoute([routes.PROFILE])} element={<ProfilePage />} />
+            <Route path={createRoute([routes.SALARY])} element={<Salary />} />
+            <Route path={createRoute([routes.EXPENSE])} element={<Expense />} />
+            <Route path={createRoute([routes.REVENUE])} element={<Revenue />} />
             <Route path={createRoute([routes.LOGIN])} element={<LoginPage />} />
-          </Routes>
-        </motion.div>
+            </Routes>
+        </motion.main>
       </AnimatePresence>
+
     </>
   );
 }
 
 function App() {
   return (
+     <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <BrowserRouter>
-        <AnimatedRoutes />
+        <Layout>
+          <AnimatedRoutes />
+        </Layout>
       </BrowserRouter>
     </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 

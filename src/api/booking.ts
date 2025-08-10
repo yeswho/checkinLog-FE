@@ -138,3 +138,13 @@ export const generateBill = async (
   const { data } = await axiosClient.post<Booking>(`/bookings/bill/${bookingId}`, billData);
   return data;
 };
+
+export const updateBookingRooms = async (bookingId: number, roomIds: number[]): Promise<Booking> => {
+  const { data } = await axiosClient.put<Booking>(`/bookings/${bookingId}/rooms`, { roomIds });
+  return data;
+};
+
+export const sendBookingConfirmation = async (bookingId: number, recipient: 'admin' | 'guest' | 'both' = 'both') => {
+  const { data } = await axiosClient.post(`/bookings/${bookingId}/confirm`, { recipient });
+  return data;
+};

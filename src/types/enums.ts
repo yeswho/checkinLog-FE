@@ -17,9 +17,11 @@ export enum ROOM_TYPE {
 
 export enum PAYMENT_MODE{
     CASH = 'Cash',
-    DEBIT_CARD = 'Debit card',
-    CREDIT_CARD = 'Credit card',
-    ONLINE = 'Online'
+    CARD = 'Card',
+    ONLINE = 'Online',
+    UPI = 'UPI',
+    CHEQUE = 'Cheque',
+    OTHER = 'Other'
 }
 
 export enum ROOM_STATUS{

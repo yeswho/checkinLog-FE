@@ -1,21 +1,19 @@
-import React from "react";
 import {
   Button,
-  Input,
-  Chip,
-  useDisclosure,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Card,
   CardBody,
+  Chip,
   Divider,
+  Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
 } from "@nextui-org/react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
-import { useUserDetails, useUpdateUser } from "../../../hooks/useUser";
-import { useParams } from "react-router-dom";
+import React from "react";
+import { useUpdateUser, useUserDetails } from "../../../hooks/useUser";
 import { ROLES } from "../../../types/enums";
 
 const Profile = () => {
@@ -28,10 +26,8 @@ const Profile = () => {
   const [hotelName, setHotelName] = React.useState("");
   const [address, setAddress] = React.useState("");
   const [username, setUsername] = React.useState("");
-  const [password, setPassword] = React.useState("");
   const [role, setRole] = React.useState<ROLES>(ROLES.STANDARD);
   const [isEditable, setIsEditable] = React.useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   React.useEffect(() => {
@@ -39,12 +35,10 @@ const Profile = () => {
       setHotelName(user.username || "");
       setAddress(user.address || "");
       setUsername(user.username || "");
-      setPassword(user.password || "");
       setRole(user.role || ROLES.STANDARD);
     }
   }, [user]);
 
-  const togglePasswordVisibility = () => setIsPasswordVisible(!isPasswordVisible);
 
   const handleEdit = () => {
     setIsEditable(true);
@@ -55,7 +49,6 @@ const Profile = () => {
       id: userId,
       address,
       username,
-      password,
       role,
     });
     setIsEditable(false);
@@ -69,7 +62,6 @@ const Profile = () => {
       setHotelName(user.username || "");
       setAddress(user.address || "");
       setUsername(user.username || "");
-      setPassword(user.password || "");
       setRole(user.role || "standard");
     }
   };
@@ -147,35 +139,6 @@ const Profile = () => {
                     variant="flat"
                     size="lg"
                     isDisabled={!isEditable}
-                    classNames={{
-                      input: "text-base",
-                      label: "text-base",
-                    }}
-                  />
-
-                  <Input
-                    label="Password"
-                    type={isPasswordVisible ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    variant="flat"
-                    size="lg"
-                    isDisabled={!isEditable}
-                    endContent={
-                      isEditable && (
-                        <button
-                          type="button"
-                          onClick={togglePasswordVisibility}
-                          className="focus:outline-none"
-                        >
-                          {isPasswordVisible ? (
-                            <EyeOffIcon className="text-default-400 cursor-pointer" size={20} />
-                          ) : (
-                            <EyeIcon className="text-default-400 cursor-pointer" size={20} />
-                          )}
-                        </button>
-                      )
-                    }
                     classNames={{
                       input: "text-base",
                       label: "text-base",

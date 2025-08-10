@@ -177,7 +177,7 @@ export default function CustomerBooking({ isOpen, onClose, customer }: CustomerB
                   <TableColumn>Check-out</TableColumn>
                   <TableColumn>Status</TableColumn>
                   <TableColumn>Payment Mode</TableColumn>
-                  <TableColumn>Total Price</TableColumn>
+                  <TableColumn>Total Room Price</TableColumn>
                   <TableColumn>Pax</TableColumn>
                   <TableColumn>Created At</TableColumn>
                 </TableHeader>

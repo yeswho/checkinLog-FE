@@ -22,7 +22,20 @@ const SeasonalBookingTrends: React.FC = () => {
             <XAxis dataKey="season" />
             <YAxis yAxisId="left" />
             <YAxis yAxisId="right" orientation="right" />
-            <Tooltip />
+            <Tooltip  cursor={{ strokeDasharray: '3 3' }}
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-default p-4 rounded-lg shadow-lg">
+                      <p>Season: {data.season}</p>
+                      <p>Bookings: {data.bookings}</p>
+                      <p>Revenue: ${data.revenue}</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}/>
             <Legend />
             <Line 
               yAxisId="left" 

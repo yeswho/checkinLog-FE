@@ -25,6 +25,7 @@ import AddBooking from "../Modals/AddBooking/AddBooking";
 import DeleteBooking from "../Modals/DeleteBooking/DeleteBooking";
 import UpdateBooking from "../Modals/UpdateBooking/UpdateBooking";
 import GenerateBill from "../Modals/GenerateBill/GenerateBill";
+import AssignRoomModal from "../Modals/AssignRoom/AssignRoom";
 import { columns } from "./bookingData";
 import { ChevronDownIcon } from "./ChevronDownIcon";
 import { PlusIcon } from "./PlusIcon";
@@ -32,6 +33,7 @@ import { SearchIcon } from "./SearchIcon";
 import { capitalize } from "./utils";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
 import { Spinner } from "@heroui/react";
+import AdditionalChargeModal from "../Modals/AdditionalChargeModel/AdditionalChargeModel";
 
 const INITIAL_VISIBLE_COLUMNS = [
   "customer",
@@ -40,6 +42,7 @@ const INITIAL_VISIBLE_COLUMNS = [
   "checkOut",
   "duration",
   "totalPrice",
+  "additionalCharges",
   "status",
   "actions",
 ];
@@ -50,7 +53,8 @@ enum BOOKING_STATUS {
   NO_SHOW = 'No show',
   CHECKED_OUT = 'Checked out',
   CHECKED_IN = 'Checked in',
-  BOOKED = 'Booked'
+  BOOKED = 'Booked',
+  PENDING = 'Pending',
 }
 
 export default function BookingsTable() {
@@ -68,6 +72,8 @@ export default function BookingsTable() {
   const { isOpen: isBookingUpdateOpen, onOpen: onBookingUpdateOpen, onClose: onBookingUpdateClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isGenerateBillOpen, onOpen: onGenerateBillOpen, onClose: onGenerateBillClose } = useDisclosure();
+  const { isOpen: isAdditionalChargeOpen, onOpen: onAdditionalChargeOpen, onClose: onAdditionalChargeClose } = useDisclosure(); // Additional Charge Modal
+  const { isOpen: isAssignRoomOpen, onOpen: onAssignRoomOpen, onClose: onAssignRoomClose } = useDisclosure();
 
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
     column: "bookingId",
@@ -75,12 +81,7 @@ export default function BookingsTable() {
   });
 
   // Use the useBookingsSearch hook to fetch bookings data
-  const { data: bookingsData = { data: [], total: 0 }, isLoading, isError } = useBookingsSearch(activeQuery, page, rowsPerPage);
-  const { data: bookings = [], total } = bookingsData;
-
-  console.log("Bookings Data:", bookingsData);
-  console.log("Bookings:", bookings);
-  console.log("Total:", total);
+  const { data: { data: bookings = [], total } = {}, isLoading, isError } = useBookingsSearch(activeQuery, page, rowsPerPage);
 
   const hasSearchFilter = Boolean(activeQuery);
 
@@ -106,9 +107,11 @@ export default function BookingsTable() {
       case "room":
         return (
           <div>
-            <p className="text-bold">{booking.room.name}</p>
+            <p className="text-bold">
+              {booking.rooms.map((room: any) => room.name).join(" + ")}
+            </p>
             <p className="text-tiny text-default-500">
-              {`${booking.room.floor} - ${booking.room.type}`}
+              {booking.rooms.map((room: any) => `${room.floor.name} - ${room.roomType.name}`).join(" + ")}
             </p>
           </div>
         );
@@ -120,6 +123,8 @@ export default function BookingsTable() {
         return `${booking.duration} nights`;
       case "totalPrice":
         return `रु.${booking?.totalPrice}`;
+      case "additionalCharges":
+        return booking?.additionalCharges ? `रु. ${booking?.additionalCharges}` : '-'
       case "status":
         return (
           <Chip
@@ -152,6 +157,18 @@ export default function BookingsTable() {
                   <VerticalDotsIcon className="text-default-400" width={undefined} height={undefined} />
                 </Button>
               </DropdownTrigger>
+              {booking.status === BOOKING_STATUS.PENDING && (
+                <DropdownMenu>
+                  <DropdownItem
+                    onPress={() => {
+                      setSelectedBooking(booking);
+                      onAssignRoomOpen();
+                    }}
+                  >
+                    Assign Room
+                  </DropdownItem>
+                </DropdownMenu>
+              )}
               <DropdownMenu>
                 <DropdownItem
                   onPress={() => {
@@ -160,6 +177,15 @@ export default function BookingsTable() {
                   }}
                 >
                   Edit Booking
+                </DropdownItem>
+
+                <DropdownItem
+                  onPress={() => {
+                    setSelectedBooking(booking);
+                    onAdditionalChargeOpen();
+                  }}
+                >
+                  Additional Charges
                 </DropdownItem>
                 <DropdownItem
                   onPress={() => {
@@ -207,7 +233,7 @@ export default function BookingsTable() {
         handleSearch();
       }
     };
-  
+
     return (
       <div className="flex flex-col gap-4">
         <div className="flex items-end gap-2">
@@ -233,12 +259,12 @@ export default function BookingsTable() {
             <Button
               size="sm"
               className="rounded-l-none bg-foreground text-background"
-              onPress={handleSearch} 
+              onPress={handleSearch}
             >
               Search
             </Button>
           </div>
-          
+
           <div className="flex gap-3 ml-auto">
             <Dropdown>
               <DropdownTrigger className="hidden sm:flex">
@@ -370,11 +396,29 @@ export default function BookingsTable() {
 
       <AddBooking isOpen={isBookingOpen} onClose={onBookingClose} room={undefined} />
 
-      <UpdateBooking isOpen={isBookingUpdateOpen} onClose={onBookingUpdateClose} bookingProp={selectedBooking} />
+      <UpdateBooking isOpen={isBookingUpdateOpen} onClose={onBookingUpdateClose} booking={selectedBooking} />
 
-      <DeleteBooking isOpen={isDeleteOpen} onClose={onDeleteClose} bookingProp={selectedBooking} />
+      <DeleteBooking isOpen={isDeleteOpen} onClose={onDeleteClose} booking={selectedBooking} />
 
-      <GenerateBill isOpen={isGenerateBillOpen} onClose={onGenerateBillClose} bookingProp={selectedBooking} />
+      <GenerateBill isOpen={isGenerateBillOpen} onClose={onGenerateBillClose} booking={selectedBooking} />
+
+      {selectedBooking && (
+        <AssignRoomModal
+          booking={selectedBooking}
+          isOpen={isAssignRoomOpen}
+          onClose={onAssignRoomClose}
+          onAssign={() => { }}
+        />
+      )}
+
+      {/* Additional Charge Modal */}
+      {selectedBooking && (
+        <AdditionalChargeModal
+          booking={selectedBooking}
+          isOpen={isAdditionalChargeOpen}
+          onClose={onAdditionalChargeClose}
+        />
+      )}
     </div>
   );
 }

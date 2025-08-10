@@ -1,11 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createRoom, deleteRoom, getRoom, getRooms, updateRoom, getRoomDetails } from '../api/rooms';
+import { createRoom, deleteRoom, getRoom, getRooms, updateRoom, getRoomDetails, getAvailableRooms } from '../api/rooms';
 
 export const useRooms = () => {
     return useQuery({
         queryKey: ['rooms'],
         queryFn: getRooms,
+    });
+};
+
+export const useAvailableRooms = (checkIn?: Date, checkOut?: Date) => {
+    return useQuery({
+        queryKey: ['availableRooms', checkIn?.toISOString(), checkOut?.toISOString()],
+        queryFn: () => getAvailableRooms({
+            checkIn: checkIn?.toISOString(),
+            checkOut: checkOut?.toISOString()
+        }),
+        enabled: !!checkIn && !!checkOut,
     });
 };
 
@@ -23,7 +34,7 @@ export const useCreateRoom = () => {
         mutationFn: createRoom,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rooms'] });
-            queryClient.invalidateQueries({queryKey: ['roomsDetail']})
+            queryClient.invalidateQueries({ queryKey: ['roomsDetail'] })
             toast.success('Room created successfully');
         },
         onError: (error: any) => {
