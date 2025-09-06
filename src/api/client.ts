@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  // baseURL: "https://checkinlog-production.up.railway.app/api",
-  baseURL: "http://localhost:8000/api",
+  baseURL: "https://checkinlog-production.up.railway.app/api",
+  // baseURL: "http://localhost:8000/api",
   headers: {
     "Content-Type": "application/json",
   },
