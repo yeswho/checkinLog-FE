@@ -54,6 +54,7 @@ export function AppNavbar() {
       name: "Front Desk",
       items: [
         { name: "Bookings", href: "/bookings", icon: <Calendar size={18} /> },
+        { name: "Calendar Book", href: "/calendar-booking", icon: <Calendar size={18} /> },
         { name: "Customers", href: "/customers", icon: <Users size={18} /> },
         { name: "Complaints", href: "/complaint", icon: <AlertCircle size={18} /> },
       ],
@@ -87,6 +88,7 @@ export function AppNavbar() {
   // Flattened menu items for mobile (including Dashboard)
   const allMenuItems = [
     { name: "Dashboard", href: "/", icon: <Home size={18} /> },
+    { name: "Calendar Book", href: "/calendar-booking", icon: <Calendar size={18} /> },
     ...menuGroups.flatMap(group => group.items)
   ];
 

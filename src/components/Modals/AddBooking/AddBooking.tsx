@@ -23,6 +23,7 @@ import { useDebounce } from "use-debounce";
 import { BOOKING_STATUS, PAYMENT_MODE } from "../../../types/enums";
 import { PlusIcon } from "../../Tables/PlusIcon";
 import AddCustomer from "../AddCustomer/AddCustomer";
+import { AddBookingProps, RoomAvailability } from '../../../types/booking';
 
 const paymentModeOptions = [
   { value: "Cash", label: "Cash" },
@@ -42,7 +43,7 @@ const BookingStatusOptions = [
   { value: "Booked", label: "Booked" },
 ];
 
-export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean; onClose: () => void; room: any }) {
+export default function AddBooking({ isOpen, onClose, room, checkIn, checkOut, onSubmitSuccess }: AddBookingProps) {
   const [formData, setFormData] = useState({
     customer: "",
     room_ids: [] as string[],
@@ -85,10 +86,12 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
       }]);
       setFormData(prev => ({
         ...prev,
-        room_ids: [room.id.toString()]
+        room_ids: [room.id.toString()],
+        checkIn: checkIn ? new CalendarDate(parseInt(checkIn.split('-')[0]), parseInt(checkIn.split('-')[1]), parseInt(checkIn.split('-')[2])) : null,
+        checkOut: checkOut ? new CalendarDate(parseInt(checkOut.split('-')[0]), parseInt(checkOut.split('-')[1]), parseInt(checkOut.split('-')[2])) : null,
       }));
     }
-  }, [room, isOpen]);
+  }, [room, isOpen, checkIn, checkOut]);
 
   const handleCustomerSelect = (key: Key | null) => {
 
@@ -134,8 +137,8 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
     const payload = {
       customer_id: parseInt(formData.customer),
       room_id: formData.room_ids.map(id => parseInt(id)),
-      check_in: formData.checkIn ? new Date(formData.checkIn.year, formData.checkIn.month - 1, formData.checkIn.day, 0, 0, 0) : new Date(),
-      check_out: formData.checkOut ? new Date(formData.checkOut.year, formData.checkOut.month - 1, formData.checkOut.day, 0, 0, 0) : new Date(),
+      check_in: formData.checkIn ? new Date(formData.checkIn.year, formData.checkIn.month - 1, formData.checkIn.day) : new Date(),
+      check_out: formData.checkOut ? new Date(formData.checkOut.year, formData.checkOut.month - 1, formData.checkOut.day) : new Date(),
       pax: parseInt(formData.numberOfGuests),
       payment_mode: formData.paymentMode,
       status: formData.status,
@@ -143,7 +146,11 @@ export default function AddBooking({ isOpen, onClose, room }: { isOpen: boolean;
 
     console.log("New booking payload:", payload);
 
-    createBooking.mutate(payload);
+    createBooking.mutate(payload, {
+        onSuccess: () => {
+            onSubmitSuccess();
+        }
+    });
     onClose();
   };
 

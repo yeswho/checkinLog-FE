@@ -34,6 +34,7 @@ import { capitalize } from "./utils";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
 import { Spinner } from "@heroui/react";
 import AdditionalChargeModal from "../Modals/AdditionalChargeModel/AdditionalChargeModel";
+import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
 
 const INITIAL_VISIBLE_COLUMNS = [
   "customer",
@@ -79,6 +80,8 @@ export default function BookingsTable() {
     column: "bookingId",
     direction: "ascending",
   });
+
+  const queryClient = useQueryClient(); // Instantiate queryClient
 
   // Use the useBookingsSearch hook to fetch bookings data
   const { data: { data: bookings = [], total } = {}, isLoading, isError } = useBookingsSearch(activeQuery, page, rowsPerPage);
@@ -394,7 +397,17 @@ export default function BookingsTable() {
         </TableBody>
       </Table>
 
-      <AddBooking isOpen={isBookingOpen} onClose={onBookingClose} room={undefined} />
+      <AddBooking
+        isOpen={isBookingOpen}
+        onClose={onBookingClose}
+        room={null} // No specific room pre-selected when adding a general booking
+        checkIn={new Date().toISOString().split('T')[0]} // Default to today
+        checkOut={new Date().toISOString().split('T')[0]} // Default to today
+        onSubmitSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['bookingsSearch'] }); // Invalidate bookings cache
+          onBookingClose();
+        }}
+      />
 
       <UpdateBooking isOpen={isBookingUpdateOpen} onClose={onBookingUpdateClose} booking={selectedBooking} />
 

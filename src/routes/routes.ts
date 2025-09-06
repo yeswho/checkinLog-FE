@@ -17,4 +17,5 @@ export const routes = {
     EMPLOYEE: '/employee',
     SALARY:'/salary',
     EXPENSE:'/expense',
+    CALENDAR_BOOKING: '/calendar-booking',
 }

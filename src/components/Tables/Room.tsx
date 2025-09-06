@@ -69,7 +69,6 @@ type Room = {
 };
 
 export default function RoomTable() {
-  const { data: roomData, isLoading, isError } = useRoomsDetail();
   const [filterValue, setFilterValue] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -84,12 +83,19 @@ export default function RoomTable() {
   const { isOpen: isBookingOpen, onOpen: onBookingOpen, onClose: onBookingClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
   const { isOpen: isSuggestionOpen, onOpen: onSuggestionOpen, onClose: onSuggestionClose } = useDisclosure();
-
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
     column: "id",
     direction: "ascending",
   });
 
+  const { data: roomsData, isLoading, isError } = useRoomsDetail(
+    page,
+    rowsPerPage,
+    filterValue,
+    typeof statusFilter === "string" ? statusFilter : Array.from(statusFilter).join(","),
+    sortDescriptor.column as string,
+    sortDescriptor.direction === "ascending" ? "asc" : "desc"
+  );
 
   const transformRooms = (rooms: Room[] = []) => {
     return rooms.map((room) => ({
@@ -112,16 +118,16 @@ export default function RoomTable() {
     }));
   };
 
-
-  console.log("RoomData ", roomData);
+  console.log("RoomData ", roomsData);
 
   const rooms = React.useMemo(() => {
-    return roomData ? transformRooms(roomData) : [];
-  }, [roomData]);
+    return roomsData?.rows ? transformRooms(roomsData.rows) : [];
+  }, [roomsData]);
 
   console.log("Rooms ", rooms);
 
-  const pages = Math.ceil(rooms.length / rowsPerPage);
+  const totalRooms = roomsData?.count || 0;
+  const pages = Math.ceil(totalRooms / rowsPerPage);
 
   const hasSearchFilter = Boolean(filterValue);
 
@@ -133,71 +139,75 @@ export default function RoomTable() {
   const filteredItems = React.useMemo(() => {
     let filteredRooms = [...rooms];
 
-    if (hasSearchFilter) {
-      filteredRooms = filteredRooms.filter((room) =>
-        room?.name.toLowerCase().includes(filterValue.toLowerCase()),
-      );
-    }
-    if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
-      filteredRooms = filteredRooms.filter((room) =>
-        Array.from(statusFilter).includes(room.status),
-      );
-    }
+    // Client-side filtering is no longer needed if implemented on the backend
+    // if (hasSearchFilter) {
+    //   filteredRooms = filteredRooms.filter((room) =>
+    //     room?.name.toLowerCase().includes(filterValue.toLowerCase()),
+    //   );
+    // }
+    // if (statusFilter !== "all" && Array.from(statusFilter).length !== statusOptions.length) {
+    //   filteredRooms = filteredRooms.filter((room) =>
+    //     Array.from(statusFilter).includes(room.status),
+    //   );
+    // }
 
     return filteredRooms;
-  }, [rooms, filterValue, statusFilter]);
+  }, [rooms]); // Dependencies changed to only 'rooms' as filtering is now server-side
 
   const items = React.useMemo(() => {
-    const start = (page - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-
-    return filteredItems.slice(start, end);
-  }, [page, filteredItems, rowsPerPage]);
+    // Client-side pagination is no longer needed if implemented on the backend
+    // const start = (page - 1) * rowsPerPage;
+    // const end = start + rowsPerPage;
+    // return filteredItems.slice(start, end);
+    return filteredItems;
+  }, [filteredItems]); // Dependencies changed to only 'filteredItems'
 
   const sortedItems = React.useMemo(() => {
-    return [...items].sort((a, b) => {
-      let first: any;
-      let second: any;
+    // Client-side sorting is no longer needed if implemented on the backend
+    // return [...items].sort((a, b) => {
+    //   let first: any;
+    //   let second: any;
 
-      if (sortDescriptor.column === "occupiedDetails" || sortDescriptor.column === "maintenanceDetails") {
-        return 0;
-      }
+    //   if (sortDescriptor.column === "occupiedDetails" || sortDescriptor.column === "maintenanceDetails") {
+    //     return 0;
+    //   }
 
-      if (sortDescriptor.column === "floor") {
-        first = a.floor?.name;
-        second = b.floor?.name;
-      } else if (sortDescriptor.column === "room_type") {
-        first = a.room_type?.name;
-        second = b.room_type?.name;
-      } else {
-        first = a[sortDescriptor.column as keyof Room];
-        second = b[sortDescriptor.column as keyof Room];
-      }
+    //   if (sortDescriptor.column === "floor") {
+    //     first = a.floor?.name;
+    //     second = b.floor?.name;
+    //   } else if (sortDescriptor.column === "room_type") {
+    //     first = a.room_type?.name;
+    //     second = b.room_type?.name;
+    //   } else {
+    //     first = a[sortDescriptor.column as keyof Room];
+    //     second = b[sortDescriptor.column as keyof Room];
+    //   }
 
-      if (typeof first === 'string' && typeof second === 'string') {
-        return sortDescriptor.direction === "ascending"
-          ? first.localeCompare(second)
-          : second.localeCompare(first);
-      }
+    //   if (typeof first === 'string' && typeof second === 'string') {
+    //     return sortDescriptor.direction === "ascending"
+    //       ? first.localeCompare(second)
+    //       : second.localeCompare(first);
+    //   }
 
-      if (sortDescriptor.column === "rate") {
-        const firstNum = parseFloat(first);
-        const secondNum = parseFloat(second);
-        const cmp = firstNum < secondNum ? -1 : firstNum > secondNum ? 1 : 0;
-        return sortDescriptor.direction === "descending" ? -cmp : cmp;
-      }
+    //   if (sortDescriptor.column === "rate") {
+    //     const firstNum = parseFloat(first);
+    //     const secondNum = parseFloat(second);
+    //     const cmp = firstNum < secondNum ? -1 : firstNum > secondNum ? 1 : 0;
+    //     return sortDescriptor.direction === "descending" ? -cmp : cmp;
+    //   }
 
-      if (sortDescriptor.column === "createdAt" || sortDescriptor.column === "updatedAt") {
-        const firstDate = new Date(first).getTime();
-        const secondDate = new Date(second).getTime();
-        const cmp = firstDate < secondDate ? -1 : firstDate > secondDate ? 1 : 0;
-        return sortDescriptor.direction === "descending" ? -cmp : cmp;
-      }
+    //   if (sortDescriptor.column === "createdAt" || sortDescriptor.column === "updatedAt") {
+    //     const firstDate = new Date(first).getTime();
+    //     const secondDate = new Date(second).getTime();
+    //     const cmp = firstDate < secondDate ? -1 : firstDate > secondDate ? 1 : 0;
+    //     return sortDescriptor.direction === "descending" ? -cmp : cmp;
+    //   }
 
-      const cmp = first < second ? -1 : first > second ? 1 : 0;
-      return sortDescriptor.direction === "descending" ? -cmp : cmp;
-    });
-  }, [sortDescriptor, items]);
+    //   const cmp = first < second ? -1 : first > second ? 1 : 0;
+    //   return sortDescriptor.direction === "descending" ? -cmp : cmp;
+    // });
+    return items;
+  }, [items]); // Dependencies changed to only 'items'
 
   const renderCell = React.useCallback((room: Room, columnKey: React.Key) => {
     if (!room) return null;
@@ -345,7 +355,7 @@ export default function RoomTable() {
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {rooms.length} rooms</span>
+          <span className="text-default-400 text-small">Total {totalRooms} rooms</span>
           <label className="flex items-center text-default-400 text-small">
             Rows per page:
             <select
@@ -360,7 +370,7 @@ export default function RoomTable() {
         </div>
       </div>
     );
-  }, [filterValue, statusFilter, visibleColumns, onSearchChange, onRowsPerPageChange, rooms.length]);
+  }, [filterValue, statusFilter, visibleColumns, onSearchChange, onRowsPerPageChange, totalRooms]);
 
   const bottomContent = React.useMemo(() => {
     return (
@@ -380,11 +390,11 @@ export default function RoomTable() {
         <span className="text-small text-default-400">
           {selectedKeys === "all"
             ? "All items selected"
-            : `${selectedKeys.size} of ${items.length} selected`}
+            : `${selectedKeys.size} of ${totalRooms} selected`}
         </span>
       </div>
     );
-  }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+  }, [selectedKeys, totalRooms, page, pages, hasSearchFilter]);
 
   if (isLoading) return <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
     <Spinner
@@ -441,7 +451,22 @@ export default function RoomTable() {
       <UpdateRoom isOpen={isUpdateOpen} onClose={onUpdateClose} room={selectedRoom} />
       <DeleteRoom isOpen={isDeleteOpen} onClose={onDeleteClose} room={selectedRoom} />
       {selectedRoom && isBookingOpen && (
-        <AddBooking isOpen={isBookingOpen} onClose={onBookingClose} room={selectedRoom} />
+        <AddBooking
+          isOpen={isBookingOpen}
+          onClose={onBookingClose}
+          room={{
+            id: selectedRoom.id,
+            name: selectedRoom.name,
+            rate: parseFloat(selectedRoom.rate) || 0,
+          }}
+          checkIn={new Date().toISOString().split('T')[0]} // Default to today
+          checkOut={new Date().toISOString().split('T')[0]} // Default to today
+          onSubmitSuccess={() => {
+            // Invalidate queries to refresh room data after a successful booking
+            // queryClient.invalidateQueries(['roomsDetail']); // Assuming useRoomsDetail is used
+            onBookingClose();
+          }}
+        />
       )}
       <ViewRoom isOpen={isViewOpen} onClose={onViewClose} room={selectedRoom} />
       <AddSuggestion isOpen={isSuggestionOpen} onClose={onSuggestionClose} room={selectedRoom ?? undefined} />

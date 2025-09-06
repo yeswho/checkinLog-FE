@@ -22,6 +22,12 @@ export interface Booking {
   room: Room;
 }
 
+export interface BasicRoomInfo {
+  id: number;
+  name: string;
+  rate: number;
+}
+
 export interface BookingGetCustomer {
   id: number;
   customer_id: number;
@@ -143,4 +149,27 @@ export interface DeleteAdditionalChargeProps {
   chargeId: number;
   isOpen: boolean;
   onClose: () => void;
+}
+
+export interface RoomAvailabilityDay {
+  day: number;
+  available: boolean;
+  isPermanentlyDisabled?: boolean; // New field to indicate if the room is explicitly disabled
+}
+
+export interface RoomAvailability extends BasicRoomInfo {
+  roomType: string;
+  floor: string;
+  availability: RoomAvailabilityDay[];
+  capacity?: number;
+}
+
+export interface AddBookingProps {
+  isOpen: boolean;
+  onClose: () => void;
+  room: BasicRoomInfo | RoomAvailability | null;
+  checkIn: string;
+  checkOut?: string;
+  multiSelectDates?: string[];
+  onSubmitSuccess: () => void;
 }

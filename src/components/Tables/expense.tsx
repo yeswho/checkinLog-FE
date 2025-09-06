@@ -34,41 +34,41 @@ import UpdateExpense from '../../components/Modals/UpdateExpense/UpdateExpense';
 import DeleteExpense from '../../components/Modals/DeleteExpense/DeleteExpense';
 import { formatDate } from '../../utils/common';
 import { EXPENSE_CATEGORY } from '../../types/employee';
-import { NepaliDatePicker } from 'nepali-datepicker-reactjs';
-import 'nepali-datepicker-reactjs/dist/index.css';
-import { convertBsToAd } from './dateConvert';
+// import { NepaliDatePicker } from 'nepali-datepicker-reactjs';
+// import 'nepali-datepicker-reactjs/dist/index.css';
+// import { convertBsToAd } from './dateConvert';
 
-const datePickerCustomStyles = `
-  .nepali-date-picker {
-    font-family: inherit;
-    border-radius: 0.5rem !important;
-    border-width: 1px !important;
-    height: 2.25rem !important;
-    min-width: 140px !important;
-    padding: 0.375rem 0.75rem !important;
-    transition: all 0.2s ease !important;
-  }
+// const datePickerCustomStyles = `
+//   .nepali-date-picker {
+//     font-family: inherit;
+//     border-radius: 0.5rem !important;
+//     border-width: 1px !important;
+//     height: 2.25rem !important;
+//     min-width: 140px !important;
+//     padding: 0.375rem 0.75rem !important;
+//     transition: all 0.2s ease !important;
+//   }
   
-  .nepali-date-picker:focus-within {
-    outline: 2px solid var(--nextui-colors-primary) !important;
-    outline-offset: 2px !important;
-  }
+//   .nepali-date-picker:focus-within {
+//     outline: 2px solid var(--nextui-colors-primary) !important;
+//     outline-offset: 2px !important;
+//   }
   
-  .date-picker-header, .date-picker-body {
-    background-color: var(--nextui-colors-background) !important;
-    border-color: var(--nextui-colors-border) !important;
-  }
+//   .date-picker-header, .date-picker-body {
+//     background-color: var(--nextui-colors-background) !important;
+//     border-color: var(--nextui-colors-border) !important;
+//   }
   
-  .selected-day {
-    background-color: var(--nextui-colors-primary) !important;
-    color: white !important;
-  }
+//   .selected-day {
+//     background-color: var(--nextui-colors-primary) !important;
+//     color: white !important;
+//   }
   
-  .day:hover {
-    background-color: var(--nextui-colors-primaryLight) !important;
-    color: var(--nextui-colors-primaryLightContrast) !important;
-  }
-`;
+//   .day:hover {
+//     background-color: var(--nextui-colors-primaryLight) !important;
+//     color: var(--nextui-colors-primaryLightContrast) !important;
+//   }
+// `;
 
 const INITIAL_VISIBLE_COLUMNS = [
     'id',
@@ -94,7 +94,8 @@ const categoryColorMap: Record<EXPENSE_CATEGORY, 'default' | 'primary' | 'second
     [EXPENSE_CATEGORY.TRAINING_AND_DEVELOPMENT]: 'secondary',
     [EXPENSE_CATEGORY.FURNITURE_AND_EQUIPMENT]: 'warning',
     [EXPENSE_CATEGORY.INSURANCE]: 'success',
-    [EXPENSE_CATEGORY.MISCELLANEOUS]: 'default'
+    [EXPENSE_CATEGORY.MISCELLANEOUS]: 'default',
+    [EXPENSE_CATEGORY.EMPLOYEE_ADVANCE]: 'warning',
 };
 
 export default function ExpenseTable() {
@@ -110,18 +111,18 @@ export default function ExpenseTable() {
     const { isOpen: isUpdateOpen, onOpen: onUpdateOpen, onClose: onUpdateClose } = useDisclosure();
     const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
 
-    const [bsStartDate, setBsStartDate] = useState('');
-    const [bsEndDate, setBsEndDate] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [isFilterApplied, setIsFilterApplied] = useState(false);
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<EXPENSE_CATEGORY | 'all'>('all');
 
-    const [tempBsStartDate, setTempBsStartDate] = useState('');
-    const [tempBsEndDate, setTempBsEndDate] = useState('');
+    const [tempStartDate, setTempStartDate] = useState('');
+    const [tempEndDate, setTempEndDate] = useState('');
     const [tempSelectedCategory, setTempSelectedCategory] = useState<EXPENSE_CATEGORY | 'all'>('all');
 
-    const adStartDate = bsStartDate ? convertBsToAd(bsStartDate).toString().split('T')[0] : '';
-    const adEndDate = bsEndDate ? convertBsToAd(bsEndDate).toString().split('T')[0] : '';
+    // const adStartDate = bsStartDate ? convertBsToAd(bsStartDate).toString().split('T')[0] : '';
+    // const adEndDate = bsEndDate ? convertBsToAd(bsEndDate).toString().split('T')[0] : '';
 
     const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
         column: 'id',
@@ -133,13 +134,13 @@ export default function ExpenseTable() {
     const { data: expensesByCategory } =  useExpensesByCategory(selectedCategory)
 
     const { data: expensesByDateRange } = useExpensesByDateRange(
-        adStartDate, adEndDate
+        startDate, endDate
     );
 
     const { data: expensesByCategoryAndDateRange } = useExpensesByCategoryAndDateRange(
         selectedCategory,
-        adStartDate,
-        adEndDate
+        startDate,
+        endDate
     );
     const headerColumns = React.useMemo(() => {
         if (visibleColumns === 'all') return columns;
@@ -148,9 +149,9 @@ export default function ExpenseTable() {
 
     // Determine which data to use based on applied filters
     const getFilteredData = () => {
-        if (isFilterApplied && adStartDate && adEndDate && selectedCategory !== 'all') {
+        if (isFilterApplied && startDate && endDate && selectedCategory !== 'all') {
             return expensesByCategoryAndDateRange || [];
-        } else if (isFilterApplied && adStartDate && adEndDate) {
+        } else if (isFilterApplied && startDate && endDate) {
             return expensesByDateRange || [];
         } else if (selectedCategory !== 'all') {
             return expensesByCategory || [];
@@ -183,8 +184,8 @@ export default function ExpenseTable() {
         filterValue,
         sortDescriptor,
         isFilterApplied,
-        adStartDate,
-        adEndDate,
+        startDate,
+        endDate,
         selectedCategory
     ]);
 
@@ -296,12 +297,12 @@ export default function ExpenseTable() {
         }
     }, []);
 
-    const handleStartDateChange = (value: string) => {
-        setTempBsStartDate(value);
+    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setTempStartDate(e.target.value);
     };
 
-    const handleEndDateChange = (value: string) => {
-        setTempBsEndDate(value);
+    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setTempEndDate(e.target.value);
     };
 
     const handleCategoryChange = (value: EXPENSE_CATEGORY | 'all') => {
@@ -309,25 +310,25 @@ export default function ExpenseTable() {
     };
 
     const applyFilters = () => {
-        setBsStartDate(tempBsStartDate);
-        setBsEndDate(tempBsEndDate);
+        setStartDate(tempStartDate);
+        setEndDate(tempEndDate);
         setSelectedCategory(tempSelectedCategory);
         setIsFilterApplied(true);
         setPage(1);
 
         const newFilters = [];
-        if (tempBsStartDate) newFilters.push(`Start: ${tempBsStartDate}`);
-        if (tempBsEndDate) newFilters.push(`End: ${tempBsEndDate}`);
+        if (tempStartDate) newFilters.push(`Start: ${tempStartDate}`);
+        if (tempEndDate) newFilters.push(`End: ${tempEndDate}`);
         if (tempSelectedCategory !== 'all') newFilters.push(`Category: ${tempSelectedCategory}`);
         setActiveFilters(newFilters);
     };
 
     const clearFilters = () => {
-        setTempBsStartDate('');
-        setTempBsEndDate('');
+        setTempStartDate('');
+        setTempEndDate('');
         setTempSelectedCategory('all');
-        setBsStartDate('');
-        setBsEndDate('');
+        setStartDate('');
+        setEndDate('');
         setSelectedCategory('all');
         setIsFilterApplied(false);
         setActiveFilters([]);
@@ -388,12 +389,13 @@ export default function ExpenseTable() {
                         <div className="flex flex-col gap-1">
                             <label className="text-small text-default-500">Start Date</label>
                             <div className="relative">
-                                <style>{datePickerCustomStyles}</style>
-                                <NepaliDatePicker
-                                    className="nepali-date-picker border-1 border-default-200 bg-default-100 rounded-medium"
-                                    value={tempBsStartDate}
+                                {/* <style>{datePickerCustomStyles}</style>*/}
+                                <Input
+                                    type="date"
+                                    value={tempStartDate}
                                     onChange={handleStartDateChange}
-                                    options={{ calenderLocale: 'ne' }}
+                                    className="border-1 border-default-200 bg-default-100 rounded-medium"
+                                    size="sm"
                                 />
                                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-default-400">
                                     <CalendarIcon size={16} />
@@ -404,11 +406,12 @@ export default function ExpenseTable() {
                         <div className="flex flex-col gap-1">
                             <label className="text-small text-default-500">End Date</label>
                             <div className="relative">
-                                <NepaliDatePicker
-                                    className="nepali-date-picker border-1 border-default-200 bg-default-100 rounded-medium"
-                                    value={tempBsEndDate}
+                                <Input
+                                    type="date"
+                                    value={tempEndDate}
                                     onChange={handleEndDateChange}
-                                    options={{ calenderLocale: 'ne' }}
+                                    className="border-1 border-default-200 bg-default-100 rounded-medium"
+                                    size="sm"
                                 />
                                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-default-400">
                                     <CalendarIcon size={16} />
@@ -457,7 +460,7 @@ export default function ExpenseTable() {
                                 size="sm"
                                 startContent={<FilterIcon size={16} />}
                                 onPress={applyFilters}
-                                isDisabled={!tempBsStartDate && !tempBsEndDate && tempSelectedCategory === 'all'}
+                                isDisabled={!tempStartDate && !tempEndDate && tempSelectedCategory === 'all'}
                             >
                                 Apply Filters
                             </Button>
@@ -508,8 +511,8 @@ export default function ExpenseTable() {
         onSearchChange,
         onRowsPerPageChange,
         expenses?.length,
-        tempBsStartDate,
-        tempBsEndDate,
+        tempStartDate,
+        tempEndDate,
         tempSelectedCategory,
         isFilterApplied,
         activeFilters,

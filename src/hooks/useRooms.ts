@@ -73,9 +73,16 @@ export const useDeleteRoom = () => {
     });
 };
 
-export const useRoomsDetail = () => {
-    return useQuery({
-        queryKey: ['roomsDetail'],
-        queryFn: getRoomDetails,
-    });
+export const useRoomsDetail = (
+  page: number = 1,
+  pageSize: number = 20,
+  filter?: string,
+  status?: string,
+  sortColumn?: string,
+  sortDirection?: 'asc' | 'desc'
+) => {
+  return useQuery({
+    queryKey: ['roomsDetail', page, pageSize, filter, status, sortColumn, sortDirection],
+    queryFn: () => getRoomDetails(page, pageSize, filter, status, sortColumn, sortDirection),
+  });
 };

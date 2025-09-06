@@ -33,41 +33,41 @@ import UpdateSalary from '../../components/Modals/UpdateSalary/UpdateSalary';
 import DeleteSalary from '../../components/Modals/DeleteSalary/DeleteSalary';
 import { formatDate } from '../../utils/common';
 
-import { NepaliDatePicker } from 'nepali-datepicker-reactjs';
-import 'nepali-datepicker-reactjs/dist/index.css';
-import { convertBsToAd } from './dateConvert';
+// import { NepaliDatePicker } from 'nepali-datepicker-reactjs';
+// import 'nepali-datepicker-reactjs/dist/index.css';
+// import { convertBsToAd } from './dateConvert';
 
-const datePickerCustomStyles = `
-  .nepali-date-picker {
-    font-family: inherit;
-    border-radius: 0.5rem !important;
-    border-width: 1px !important;
-    height: 2.25rem !important;
-    min-width: 140px !important;
-    padding: 0.375rem 0.75rem !important;
-    transition: all 0.2s ease !important;
-  }
+// const datePickerCustomStyles = `
+//   .nepali-date-picker {
+//     font-family: inherit;
+//     border-radius: 0.5rem !important;
+//     border-width: 1px !important;
+//     height: 2.25rem !important;
+//     min-width: 140px !important;
+//     padding: 0.375rem 0.75rem !important;
+//     transition: all 0.2s ease !important;
+//   }
   
-  .nepali-date-picker:focus-within {
-    outline: 2px solid var(--nextui-colors-primary) !important;
-    outline-offset: 2px !important;
-  }
+//   .nepali-date-picker:focus-within {
+//     outline: 2px solid var(--nextui-colors-primary) !important;
+//     outline-offset: 2px !important;
+//   }
   
-  .date-picker-header, .date-picker-body {
-    background-color: var(--nextui-colors-background) !important;
-    border-color: var(--nextui-colors-border) !important;
-  }
+//   .date-picker-header, .date-picker-body {
+//     background-color: var(--nextui-colors-background) !important;
+//     border-color: var(--nextui-colors-border) !important;
+//   }
   
-  .selected-day {
-    background-color: var(--nextui-colors-primary) !important;
-    color: white !important;
-  }
+//   .selected-day {
+//     background-color: var(--nextui-colors-primary) !important;
+//     color: white !important;
+//   }
   
-  .day:hover {
-    background-color: var(--nextui-colors-primaryLight) !important;
-    color: var(--nextui-colors-primaryLightContrast) !important;
-  }
-`;
+//   .day:hover {
+//     background-color: var(--nextui-colors-primaryLight) !important;
+//     color: var(--nextui-colors-primaryLightContrast) !important;
+//   }
+// `;
 
 const INITIAL_VISIBLE_COLUMNS = [
   'id',
@@ -94,15 +94,15 @@ export default function SalaryTable() {
   const { isOpen: isUpdateOpen, onOpen: onUpdateOpen, onClose: onUpdateClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
 
-  const [bsStartDate, setBsStartDate] = useState('');
-  const [bsEndDate, setBsEndDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [tempBsStartDate, setTempBsStartDate] = useState('');
-  const [tempBsEndDate, setTempBsEndDate] = useState('');
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
 
-  const adStartDate = bsStartDate ? convertBsToAd(bsStartDate).toString().split('T')[0] : '';
-  const adEndDate = bsEndDate ? convertBsToAd(bsEndDate).toString().split('T')[0] : '';
+  // const adStartDate = bsStartDate ? convertBsToAd(bsStartDate).toString().split('T')[0] : '';
+  // const adEndDate = bsEndDate ? convertBsToAd(bsEndDate).toString().split('T')[0] : '';
 
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
     column: 'id',
@@ -125,12 +125,12 @@ export default function SalaryTable() {
       );
     }
 
-    if (isFilterApplied && adStartDate && adEndDate) {
+    if (isFilterApplied && startDate && endDate) {
       filteredSalaries = filteredSalaries.filter((salary) => {
         const salaryDate = new Date(salary.salary_date);
-        const startDate = new Date(adStartDate);
-        const endDate = new Date(adEndDate);
-        return salaryDate >= startDate && salaryDate <= endDate;
+        const startFilterDate = new Date(startDate);
+        const endFilterDate = new Date(endDate);
+        return salaryDate >= startFilterDate && salaryDate <= endFilterDate;
       });
     }
 
@@ -140,7 +140,7 @@ export default function SalaryTable() {
       const cmp = (first ?? 0) < (second ?? 0) ? -1 : (first ?? 0) > (second ?? 0) ? 1 : 0;
       return sortDescriptor.direction === 'descending' ? -cmp : cmp;
     });
-  }, [salaries, filterValue, sortDescriptor, isFilterApplied, adStartDate, adEndDate]);
+  }, [salaries, filterValue, sortDescriptor, isFilterApplied, startDate, endDate]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -251,31 +251,31 @@ export default function SalaryTable() {
     }
   }, []);
 
-  const handleStartDateChange = (value: string) => {
-    setTempBsStartDate(value);
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTempStartDate(e.target.value);
   };
 
-  const handleEndDateChange = (value: string) => {
-    setTempBsEndDate(value);
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTempEndDate(e.target.value);
   };
 
   const applyDateFilter = () => {
-    setBsStartDate(tempBsStartDate);
-    setBsEndDate(tempBsEndDate);
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
     setIsFilterApplied(true);
     setPage(1);
     
     const newFilters = [];
-    if (tempBsStartDate) newFilters.push(`Start: ${tempBsStartDate}`);
-    if (tempBsEndDate) newFilters.push(`End: ${tempBsEndDate}`);
+    if (tempStartDate) newFilters.push(`Start: ${tempStartDate}`);
+    if (tempEndDate) newFilters.push(`End: ${tempEndDate}`);
     setActiveFilters(newFilters);
   };
 
   const clearDateFilter = () => {
-    setTempBsStartDate('');
-    setTempBsEndDate('');
-    setBsStartDate('');
-    setBsEndDate('');
+    setTempStartDate('');
+    setTempEndDate('');
+    setStartDate('');
+    setEndDate('');
     setIsFilterApplied(false);
     setActiveFilters([]);
   };
@@ -334,12 +334,13 @@ export default function SalaryTable() {
             <div className="flex flex-col gap-1">
               <label className="text-small text-default-500">Start Date</label>
               <div className="relative">
-                <style>{datePickerCustomStyles}</style>
-                <NepaliDatePicker
-                  className="nepali-date-picker border-1 border-default-200 bg-default-100 rounded-medium"
-                  value={tempBsStartDate}
+                {/* <style>{datePickerCustomStyles}</style> */}
+                <Input
+                  type="date"
+                  value={tempStartDate}
                   onChange={handleStartDateChange}
-                  options={{ calenderLocale: 'ne' }}
+                  className="border-1 border-default-200 bg-default-100 rounded-medium"
+                  size="sm"
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-default-400">
                   <CalendarIcon size={16} />
@@ -350,11 +351,12 @@ export default function SalaryTable() {
             <div className="flex flex-col gap-1">
               <label className="text-small text-default-500">End Date</label>
               <div className="relative">
-                <NepaliDatePicker
-                  className="nepali-date-picker border-1 border-default-200 bg-default-100 rounded-medium"
-                  value={tempBsEndDate}
+                <Input
+                  type="date"
+                  value={tempEndDate}
                   onChange={handleEndDateChange}
-                  options={{ calenderLocale: 'ne' }}
+                  className="border-1 border-default-200 bg-default-100 rounded-medium"
+                  size="sm"
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-default-400">
                   <CalendarIcon size={16} />
@@ -368,7 +370,7 @@ export default function SalaryTable() {
                 size="sm" 
                 startContent={<FilterIcon size={16} />}
                 onPress={applyDateFilter}
-                isDisabled={!tempBsStartDate && !tempBsEndDate}
+                isDisabled={!tempStartDate && !tempEndDate}
               >
                 Apply Filter
               </Button>
@@ -418,8 +420,8 @@ export default function SalaryTable() {
     onSearchChange, 
     onRowsPerPageChange, 
     salaries?.length,
-    tempBsStartDate,
-    tempBsEndDate,
+    tempStartDate,
+    tempEndDate,
     isFilterApplied,
     activeFilters,
     filteredItems.length

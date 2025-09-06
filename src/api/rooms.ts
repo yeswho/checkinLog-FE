@@ -36,7 +36,23 @@ export const deleteRoom = async (id: number) => {
   return id;
 };
 
-export const getRoomDetails = async () => {
-  const { data } = await axiosClient.get('/rooms/details');
+export const getRoomDetails = async (
+  page?: number,
+  pageSize?: number,
+  filter?: string,
+  status?: string,
+  sortColumn?: string,
+  sortDirection?: 'asc' | 'desc'
+) => {
+  const { data } = await axiosClient.get('/rooms/details', {
+    params: {
+      page,
+      pageSize,
+      filter,
+      status,
+      sortColumn,
+      sortDirection,
+    },
+  });
   return data;
-}
+};
