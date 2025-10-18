@@ -34,7 +34,7 @@ import { capitalize } from "./utils";
 import { VerticalDotsIcon } from "./VerticalDotsIcon";
 import { Spinner } from "@heroui/react";
 import AdditionalChargeModal from "../Modals/AdditionalChargeModel/AdditionalChargeModel";
-import { useQueryClient } from '@tanstack/react-query'; // Import useQueryClient
+import { useQueryClient } from '@tanstack/react-query';
 
 const INITIAL_VISIBLE_COLUMNS = [
   "customer",
@@ -59,8 +59,8 @@ enum BOOKING_STATUS {
 }
 
 export default function BookingsTable() {
-  const [searchQuery, setSearchQuery] = React.useState(""); // Stores the input value
-  const [activeQuery, setActiveQuery] = React.useState(""); // Stores the query sent to the backend
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [activeQuery, setActiveQuery] = React.useState("");
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
   const [visibleColumns, setVisibleColumns] = React.useState<Selection>(
     new Set(INITIAL_VISIBLE_COLUMNS)
@@ -73,7 +73,7 @@ export default function BookingsTable() {
   const { isOpen: isBookingUpdateOpen, onOpen: onBookingUpdateOpen, onClose: onBookingUpdateClose } = useDisclosure();
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isGenerateBillOpen, onOpen: onGenerateBillOpen, onClose: onGenerateBillClose } = useDisclosure();
-  const { isOpen: isAdditionalChargeOpen, onOpen: onAdditionalChargeOpen, onClose: onAdditionalChargeClose } = useDisclosure(); // Additional Charge Modal
+  const { isOpen: isAdditionalChargeOpen, onOpen: onAdditionalChargeOpen, onClose: onAdditionalChargeClose } = useDisclosure();
   const { isOpen: isAssignRoomOpen, onOpen: onAssignRoomOpen, onClose: onAssignRoomClose } = useDisclosure();
 
   const [sortDescriptor, setSortDescriptor] = React.useState<SortDescriptor>({
@@ -81,9 +81,8 @@ export default function BookingsTable() {
     direction: "ascending",
   });
 
-  const queryClient = useQueryClient(); // Instantiate queryClient
+  const queryClient = useQueryClient();
 
-  // Use the useBookingsSearch hook to fetch bookings data
   const { data: { data: bookings = [], total } = {}, isLoading, isError } = useBookingsSearch(activeQuery, page, rowsPerPage);
 
   const hasSearchFilter = Boolean(activeQuery);
@@ -221,16 +220,15 @@ export default function BookingsTable() {
   }, []);
 
   const onSearchChange = React.useCallback((value?: string) => {
-    setSearchQuery(value || ""); // Update the search input value
+    setSearchQuery(value || "");
   }, []);
 
   const handleSearch = () => {
-    setActiveQuery(searchQuery); // Set the active query when the search button is clicked
-    setPage(1); // Reset to the first page when searching
+    setActiveQuery(searchQuery);
+    setPage(1);
   };
 
   const topContent = React.useMemo(() => {
-    // Add a handler for the Enter key
     const handleKeyPress = (e: { key: string; }) => {
       if (e.key === "Enter") {
         handleSearch();
@@ -301,11 +299,13 @@ export default function BookingsTable() {
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {total || 0} bookings</span>
+          <span className="text-default-400 text-small">
+            {isLoading ? "Loading..." : `Total ${total || 0} bookings`}
+          </span>
           <label className="flex items-center text-default-400 text-small">
             Rows per page:
             <select
-              className="bg-transparent outline-none text-default-400 text-small"
+              className="bg-transparent outline-none text-default-400 text-small ml-1"
               onChange={onRowsPerPageChange}
               value={rowsPerPage}
             >
@@ -317,7 +317,7 @@ export default function BookingsTable() {
         </div>
       </div>
     );
-  }, [searchQuery, visibleColumns, onSearchChange, onRowsPerPageChange, total, rowsPerPage, handleSearch]);
+  }, [searchQuery, visibleColumns, onSearchChange, onRowsPerPageChange, total, rowsPerPage, handleSearch, isLoading]);
 
   const bottomContent = React.useMemo(() => {
     return (
@@ -343,22 +343,26 @@ export default function BookingsTable() {
     );
   }, [selectedKeys, bookings.length, page, total, rowsPerPage, hasSearchFilter]);
 
-  if (isLoading) return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
-      <Spinner
-        classNames={{
-          base: "scale-150",
-          label: "text-foreground mt-4",
-        }}
-        color="primary"
-      />
-    </div>
-  );
+  // Show full-page loading spinner when initially loading
+  if (isLoading && bookings.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Spinner
+          classNames={{
+            base: "scale-150",
+            label: "text-foreground mt-4",
+          }}
+          color="primary"
+          label="Loading bookings..."
+        />
+      </div>
+    );
+  }
 
-  if (isError) return <div>Error fetching bookings</div>;
+  if (isError) return <div className="text-danger">Error fetching bookings</div>;
 
   return (
-    <div>
+    <div className="relative">
       <Table
         isCompact
         removeWrapper
@@ -366,7 +370,7 @@ export default function BookingsTable() {
         bottomContent={bottomContent}
         bottomContentPlacement="outside"
         classNames={{
-          wrapper: ["max-h-[382px]"],
+          wrapper: ["max-h-[382px]", isLoading ? "opacity-50" : ""],
           th: ["bg-transparent", "text-default-500", "border-b", "border-divider"],
         }}
         selectedKeys={selectedKeys}
@@ -388,7 +392,17 @@ export default function BookingsTable() {
             </TableColumn>
           )}
         </TableHeader>
-        <TableBody emptyContent={"No bookings found"} items={bookings}>
+        <TableBody 
+          emptyContent={isLoading ? " " : "No bookings found"} 
+          items={bookings}
+          isLoading={isLoading}
+          loadingContent={
+            <Spinner
+              color="primary"
+              label="Loading bookings..."
+            />
+          }
+        >
           {(item) => (
             <TableRow key={item.id}>
               {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
@@ -397,14 +411,24 @@ export default function BookingsTable() {
         </TableBody>
       </Table>
 
+      {/* Show overlay spinner during subsequent loads (pagination, search, etc.) */}
+      {isLoading && bookings.length > 0 && (
+        <div className="absolute inset-0 bg-white/50 dark:bg-black/50 flex items-center justify-center rounded-lg backdrop-blur-sm z-10">
+          <Spinner
+            color="primary"
+            label="Loading..."
+          />
+        </div>
+      )}
+
       <AddBooking
         isOpen={isBookingOpen}
         onClose={onBookingClose}
-        room={null} // No specific room pre-selected when adding a general booking
-        checkIn={new Date().toISOString().split('T')[0]} // Default to today
-        checkOut={new Date().toISOString().split('T')[0]} // Default to today
+        room={null}
+        checkIn={new Date().toISOString().split('T')[0]}
+        checkOut={new Date().toISOString().split('T')[0]}
         onSubmitSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['bookingsSearch'] }); // Invalidate bookings cache
+          queryClient.invalidateQueries({ queryKey: ['bookingsSearch'] });
           onBookingClose();
         }}
       />
@@ -424,7 +448,6 @@ export default function BookingsTable() {
         />
       )}
 
-      {/* Additional Charge Modal */}
       {selectedBooking && (
         <AdditionalChargeModal
           booking={selectedBooking}
