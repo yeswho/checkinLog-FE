@@ -388,7 +388,7 @@ export default function BookingsTable() {
             </TableColumn>
           )}
         </TableHeader>
-        <TableBody emptyContent={!isLoading && "No bookings found"} items={bookings}>
+        <TableBody emptyContent={null} items={bookings}>
           {(item) => (
             <TableRow key={item.id}>
               {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
