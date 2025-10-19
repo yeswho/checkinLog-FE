@@ -343,18 +343,6 @@ export default function BookingsTable() {
     );
   }, [selectedKeys, bookings.length, page, total, rowsPerPage, hasSearchFilter]);
 
-  if (isLoading) return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
-      <Spinner
-        classNames={{
-          base: "scale-150",
-          label: "text-foreground mt-4",
-        }}
-        color="primary"
-      />
-    </div>
-  );
-
   if (isError) return <div>Error fetching bookings</div>;
 
   return (
@@ -388,7 +376,20 @@ export default function BookingsTable() {
             </TableColumn>
           )}
         </TableHeader>
-        <TableBody emptyContent={null} items={bookings}>
+        <TableBody
+          emptyContent={isLoading ? (
+            <Spinner
+              classNames={{
+                base: "scale-150",
+                label: "text-foreground mt-4",
+              }}
+              color="primary"
+            />
+          ) : (
+            "No bookings found"
+          )}
+          items={bookings}
+        >
           {(item) => (
             <TableRow key={item.id}>
               {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
